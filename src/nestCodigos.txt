@@ -1,0 +1,19 @@
+//iniciar el programa
+  npm run start:dev
+//crear un componente
+nest g res nombreDeTuComponente
+
+//para crear la entidad en la DB deemos crear un constructor en el service
+ejem: 
+  constructor(
+    @InjectRepository(Producto)
+    private productoRepo: Repository<Producto>
+  ){}
+
+
+para crear un recurso:
+1 definimos la entidad.
+2 actualizaos el appmodule.
+3 importar el typeormmodule.forFacture en la entidad.module
+4 modificar el dto create.
+5 modificar el servicio.
