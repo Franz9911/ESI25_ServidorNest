@@ -1,4 +1,4 @@
-import { ConflictException, HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { ConflictException,Logger, HttpException, HttpStatus, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -7,23 +7,42 @@ import { Between, ILike, Repository } from 'typeorm';
 import { Persona } from 'src/persona/entities/persona.entity';
 import { PersonaService } from 'src/persona/persona.service';
 import { PaginacionResultado } from 'src/Paginacion-resultado.dto';
-import * as bcrypt from 'bcrypt'
-
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsuarioService {
+  private readonly logger= new Logger(UsuarioService.name);
   constructor(
     @InjectRepository(Usuario)
     private usuarioRepository:Repository<Usuario>,
     private PersonaServ: PersonaService,
   ){}
+  
+  async contarUsuarios(){
+    const usuariosContados = await this.usuarioRepository.count();
+    return usuariosContados;
+  }
+  async crearUsuarioPorDefecto(persona:Persona){
+    const contrasenha = await bcrypt.hash('Admin123%', 10);
+    const usuario:Usuario = this.usuarioRepository.create({
+      nombreU: 'Admin',
+      contrasenha: contrasenha,
+      rol: 'Admin',
+      estado:'acti',
+      persona:persona,
+    });
+  
+    await this.usuarioRepository.save(usuario);
+    console.log('********Usuario por defecto creado.***********');
+    console.log("nombre: Admin");
+    console.log("contraseña: Admin123%")
+  }
 
   async buscarUsuarioPorNombre(username: string): Promise<any | undefined> {
     return this.usuarioRepository.findOne({ where: { nombreU:username } });
   }
-
   async CrearUsuario(createUsuarioDto: CreateUsuarioDto) {
-    console.log("crear usuario")   
+    this.logger.log("crear usuario")   
     const personaExiste = await this.PersonaServ.findOne(createUsuarioDto.persona.id);
     console.log(personaExiste);
     if(!personaExiste) throw new ConflictException("error: la persona no existe en la db")
@@ -64,10 +83,6 @@ export class UsuarioService {
     }
   }
 
-  async BuscarTodosLosUsuariosSer() {
-    return await this.usuarioRepository.find({relations:['persona'],order:{id:'DESC'}});
-  }
-
   async BuscarTodosLosUsuariosSer2(nombre?:string,apellidos?:string,estado?:string,rol?:string,
     fechaInicio?:string,fechaFin?:string,page?:number,limit?:number): Promise<PaginacionResultado<Usuario>> {
     let fechaIn: Date | null = null;
@@ -100,17 +115,47 @@ export class UsuarioService {
   }
 
   //buscar si la persona tiene registro de usuario
-  async findOne(id: number) {
+  async buscarUsuarioId(id: number) {
     return await this.usuarioRepository.findOne({
-      where:{ persona:{id:id}}
+      where:{ id:id},
+        relations:['persona']
     })
   }
-
-  update(id: number, updateUsuarioDto: UpdateUsuarioDto) {
-    return `This action updates a #${id} usuario`;
+  //actualizar usuario 
+  //entrada:estado, rol. 
+  async actualizarUsuarioServ(id: number, updateUsuarioDto: UpdateUsuarioDto) {
+    const usuario= await this.usuarioRepository.findOne({
+      where:{id},
+      relations:['persona']
+    });
+    this.logger.log(usuario);
+    if(!usuario)throw new NotFoundException('Usuario no encontrado');
+    if(updateUsuarioDto.estado)usuario.estado=updateUsuarioDto.estado;
+    if(updateUsuarioDto.rol)usuario.rol=updateUsuarioDto.rol;
+    const usuarioDB =await this.usuarioRepository.save(usuario);
+    const {contrasenha,estado,persona,rol,fechaReg, ...resultado}=usuarioDB;
+    return resultado;
   }
-  //eliminar los usarios y persona
-  async EliminarUsuarioyPersonaServ(id:number,ci:number,personaId:number){
+  //editar mi perfil entrada:up:{"contrasenhaActual", "nuevaContrasenha", "nombreU", "fotografia"}
+  async editarMiPerfilServ(up:any,usuarioId:string){
+    console.log("en editarPerfilServ");
+    const usuarioAux= await this.usuarioRepository.findOne({where:{id:+usuarioId},relations:['persona']});
+    if(!usuarioAux){throw new UnauthorizedException("usuario no encontrado");}
+    const contraseñaAct=await bcrypt.compare(up.contrasenhaActual,usuarioAux.contrasenha);//comparamos la contraseña de la db y la ingresada por teclado. 
+    if(contraseñaAct){ //si las contraseñas son iguales editams los valores del usuarioAux.
+      if(up.nuevaContrasenha) usuarioAux.contrasenha=await bcrypt.hash(up.nuevaContrasenha, 10); 
+      if(up.nombreU) usuarioAux.nombreU=up.nombreU;
+      if(up.fotografia) usuarioAux.fotografia=up.fotografia;
+    }else{
+      throw new UnauthorizedException('los datos ingresados no corresponden al usuario')
+    }
+    //guardamos los cambios en db.
+    const resultado= await this.usuarioRepository.save(usuarioAux);
+    return resultado;   
+  }
+
+  //eliminar los usarios
+  async EliminarUsuarioServ(id:number,ci:number){
     let resultado  
     const usuario=await this.usuarioRepository.findOne({
       where:{id},relations: ['persona']});
@@ -132,6 +177,5 @@ export class UsuarioService {
           cause: "recurso no encontrado en la DB"});
         }
     return resultado;
-  }
-    
+  }   
 }

@@ -22,16 +22,16 @@ export class AutenticacionService {
       }
       return null;
     }  
-    getTokens(usuarioId:number,usuarioNom:string,usuarioRol:string){
+    getTokens(usuarioId:number,usuarioNom:string,usuarioRol:string,){
       const payload={
         sub: usuarioId,
         nombre: usuarioNom, 
-        rol: usuarioRol
+        rol: usuarioRol,
       }
       console.log("payload")  
       console.log(payload);
       //creamos los tokens
-      const accessToken=this.jwtService.sign(payload,{secret:'Pancho1', expiresIn:'15m'});
+      const accessToken=this.jwtService.sign(payload,{secret:'Pancho1', expiresIn:'1d'});
       const refreshToken=this.jwtService.sign(payload,{expiresIn:'1d'});
       //agregamos el refreshToken en una lista 
       this.refreshTokens.set(usuarioId,refreshToken);
@@ -48,25 +48,19 @@ export class AutenticacionService {
         const tRegistrado=this.refreshTokens.get(usuarioId);
         if(tRegistrado!== resfreshToken) throw new UnauthorizedException('Token invalido');
         const nuevoRefreshToken=this.jwtService.sign({sub:usuarioId},{expiresIn:'1d'});
-        const nuevoTokenAcceso=this.jwtService.sign({sub:usuarioId},{secret:'Pancho1',expiresIn:'15m'});
+        const nuevoTokenAcceso=this.jwtService.sign({sub:usuarioId},{secret:'Pancho1',expiresIn:'1d'});
         this.refreshTokens.set(usuarioId,nuevoRefreshToken);
         return {accessToken:nuevoTokenAcceso,refreshToken:nuevoRefreshToken};
-      }catch(e){
+      }catch(e){ 
         throw new UnauthorizedException('Token expirado');
-      }
-      
-      
-      
+      }  
     }
 
     logout(u_id:number){
       this.refreshTokens.delete(u_id);
       console.log(this.refreshTokens);
-      
     }
-
-
-
+    
     async login(login:LoginDto) {
       const user=await this.usuarioService.buscarUsuarioPorNombre(login.nombreU);
       console.log(login.nombreU);

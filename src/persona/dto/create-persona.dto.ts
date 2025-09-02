@@ -1,4 +1,4 @@
-import { IsNumber,MinLength,IsAlpha, Min, Allow, Matches } from "class-validator";
+import { IsNumber,MinLength,IsAlpha, Min, Allow, Matches, IsOptional, minLength, MaxLength } from "class-validator";
 
 export class CreatePersonaDto {
     @Allow()
@@ -16,13 +16,17 @@ export class CreatePersonaDto {
     @MinLength(2,{message:'Debe seleccionar un tipo de documento'})
     tipoDoc:string;
     @IsNumber()
-    @Min(999999,{message:'el numero de documento debe tener 7 digitos o mas'})
+    @Min(99999,{message:'El numero de documento debe tener 6 digitos o mas'})
     numDoc:number;
     direccion:string;
     @IsNumber()
     @Min(60000000,{message:'debe ingresara un numero de celular'})
     celular:number;
-    @Allow()
+    @IsOptional()
+    @MinLength(12,{message:'el correo electronico debe tener un minimo de 12 caracteres'})
+    @MaxLength(100)
+    correoE:string;
+    @IsOptional()
     fechaNac:Date;
     //fechaReg:Date;
 }

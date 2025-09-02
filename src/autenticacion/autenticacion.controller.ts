@@ -21,6 +21,7 @@ export class AutenticacionController {
       const {accessToken,refreshToken}=this.autenticacionService.getTokens(usuarioAux.id,usuarioAux.nombreU,usuarioAux.rol) //solicitmos la creacion de refresh y accessToken
       const u_id=usuarioAux.id; 
       const u_r=usuarioAux.rol; 
+      const fotografia=usuarioAux.fotografia;
       console.log("imprimiendo el refrestoken")
       console.log(refreshToken);
       //agregamos al access_token dentro de la cookie  dentro del res.
@@ -29,7 +30,7 @@ export class AutenticacionController {
         secure: false, // true si estás en HTTPS
         sameSite: 'lax',
         path: '/',
-        maxAge: 15 * 60 * 1000, // 15 minutos
+        maxAge: 2* 60 * 60 * 1000, // 2 roras
       });
       //lagregamos el refreshToken dentro de la cookie de la respuesta.
       res.cookie('refreshToken',refreshToken,{ 
@@ -41,7 +42,7 @@ export class AutenticacionController {
 
       });
       console.log("el ultimo return") 
-      return {u_id,u_r,mensaje:'ingreso exitoso!!'}
+      return {u_id,u_r,fotografia,mensaje:'ingreso exitoso!!'}
   
     }
 
@@ -72,11 +73,17 @@ export class AutenticacionController {
         console.log('en el serv cerrado sesion');
         const u_id=req.body.id;
         this.autenticacionService.logout(u_id);
+        //boramos las cookies.
         res.clearCookie('refreshToken', {
           httpOnly: true,
           sameSite: 'lax',
           secure: false, // true en producción
         });
+        res.clearCookie('access_token',{
+         httpOnly:true,
+         sameSite:'lax',
+         secure:false, 
+        })
         return { message: 'Cierre de sesión exitoso' };
     }   
 }

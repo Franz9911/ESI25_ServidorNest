@@ -4,7 +4,7 @@ import { Persona } from "src/persona/entities/persona.entity";
 
 export class CreateUsuarioDto {
     @IsString()
-    @MinLength(4,{message:'El nombre de usuario debe tener un minimo de 4 caracteres'})
+    @MinLength(4,{message:'El nombre de usuario debe tener un minimo de 5 caracteres'})
     nombreU:string;
     @IsStrongPassword(
         {minLength:8,minLowercase:1,minNumbers:1,minUppercase:1,minSymbols:1}) 

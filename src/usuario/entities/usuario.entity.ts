@@ -9,11 +9,11 @@ export class Usuario {
    id:number;
    @Column({length:30,comment:'nombre de usuario'})
    nombreU:string;
-   @Column({length:60, comment:'contraseña del usuario'})
+   @Column({length:90, comment:'contraseña del usuario'})
    contrasenha:string;
    @Column({length:5, comment:'rol asignado al usuario: adimnistrador=AdmG; vendedor=A.Ven; Tecnico=S.Tec'})
    rol:string;
-   @Column({nullable: true,length:70, comment:'fotografia del usuario'})
+   @Column({nullable: true,length:100, comment:'fotografia del usuario'})
    fotografia:string;
    @Column({length:8, 
       comment:'estado de la cuenta del usuario: activo=act; inactivo=inac'})
@@ -26,3 +26,4 @@ export class Usuario {
    @JoinColumn({name:'persona',referencedColumnName:'id'})
    persona:Persona; 
 }
+

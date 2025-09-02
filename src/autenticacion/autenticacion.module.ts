@@ -11,7 +11,7 @@ import { UsuarioModule } from 'src/usuario/usuario.module';
     PassportModule,
     JwtModule.register({
       secret:'pancho1',
-      signOptions:{expiresIn:'15m'}
+      signOptions:{expiresIn:'2h'} //este es que se toma en el loguin
     }),
   ],
   controllers: [AutenticacionController],
