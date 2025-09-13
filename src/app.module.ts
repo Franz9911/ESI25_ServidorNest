@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config'; 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -22,6 +23,10 @@ import { Marca } from './marca/entities/marca.entity';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal:true,
+      envFilePath:'.env' //frzar a buscar la ruta del archivo .env.
+    }),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: 'localhost',

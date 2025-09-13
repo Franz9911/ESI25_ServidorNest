@@ -3,9 +3,12 @@ import { AutenticacionService } from './autenticacion.service';
 import { LoginDto } from './dto/login.dto';
 import { Response,Request } from 'express';
 import { Throttle } from '@nestjs/throttler';
+import { ConfigService } from '@nestjs/config';
+import { NuevaContrasenhaDto } from './dto/nuevaContrasenha.dto';
 @Controller('autenticacion')
 export class AutenticacionController {
-  constructor(private readonly autenticacionService: AutenticacionService) {}
+  constructor(private readonly autenticacionService: AutenticacionService,
+    ) {}
   @Throttle({ default: { limit: 3, ttl: 60000 } })  //3 peticiones por minuto
   @Post('login')
   async login(
@@ -85,5 +88,19 @@ export class AutenticacionController {
          secure:false, 
         })
         return { message: 'Cierre de sesión exitoso' };
-    }   
+    }  
+    @Throttle({ default: { limit: 1, ttl: 60*1000 } })  //1 peticion por minuto
+    @Post('recuperarCuenta')
+    async recuperarCuenta(
+      @Body('email') email:string
+    ){
+      return this.autenticacionService.recuperarCuentaServ(email);
+    }
+    @Post('validarCodigo')
+    async validarCodigo(
+      @Body()nuevaContrasenhaDto:NuevaContrasenhaDto,
+    ){
+      console.log(nuevaContrasenhaDto)
+      return this.autenticacionService.VerificarCodigoServ(nuevaContrasenhaDto);
+    }
 }

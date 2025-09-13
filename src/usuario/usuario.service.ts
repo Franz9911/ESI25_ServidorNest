@@ -1,4 +1,4 @@
-import { ConflictException,Logger, HttpException, HttpStatus, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException,Logger, HttpException, HttpStatus, Injectable, NotFoundException, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -74,11 +74,13 @@ export class UsuarioService {
         return usuarioA= await this.usuarioRepository.save(nuevoU)   
       }else{
         console.log(personaExiste);//resultado null
-        throw new HttpException({
-          status: HttpStatus.UNPROCESSABLE_ENTITY,
-          error: 'Verifique los datos enviados!!',
-        }, HttpStatus.UNPROCESSABLE_ENTITY, {
-            cause: "Incoherencia de datos:"});
+        throw new UnprocessableEntityException({
+          message: 'Verifique los datos enviados!!',
+          cause:'Verifica los datos enviados'
+        }
+          
+          
+        );
       }
     }
   }
@@ -90,11 +92,12 @@ export class UsuarioService {
     if(fechaInicio)fechaIn=new Date(`${fechaInicio} 00:00:00`);
     if(fechaFin)fechaFi=new Date(`${fechaFin} 23:59:59`)
     else fechaFi=new Date(`${fechaInicio} 23:59:59`)
+    console.log(estado);
     const [data, total]= await this.usuarioRepository.findAndCount({
       where:{
         // los ... son el "operador de propagacion" =>si fechaIn y fechaFi son null esa linea no se agrega a la consulta  
         ...(fechaIn && fechaFi && { fechaReg: Between(fechaIn, fechaFi) }),
-        ...(estado && { estado: ILike(`%${estado}%`) }),
+        estado,
         ...(rol && { rol: ILike(`%${rol}%`) }),
         persona:{
           ...(nombre && { nombre: ILike(`%${nombre}%`) }),
@@ -119,6 +122,16 @@ export class UsuarioService {
     return await this.usuarioRepository.findOne({
       where:{ id:id},
         relations:['persona']
+    })
+  }
+
+  async buscarUsuariPorEmail(email: string){
+    return await this.usuarioRepository.findOne({
+      where:{
+        persona:{
+          correoE:email
+        }
+      },relations:['persona'],
     })
   }
   //actualizar usuario 
@@ -153,7 +166,15 @@ export class UsuarioService {
     const resultado= await this.usuarioRepository.save(usuarioAux);
     return resultado;   
   }
-
+  //cambiar contraseña en caso de olvido o perdida
+  async cambiarContrasenhaServ(nuevaContrasenha:string,usuarioId:string){
+    console.log("en cabiarContrasenhaServ");
+    const usuarioAux= await this.usuarioRepository.findOne({where:{id:+usuarioId},relations:['persona']});
+    if(!usuarioAux){throw new UnauthorizedException("usuario no encontrado");}
+    if(nuevaContrasenha) usuarioAux.contrasenha=await bcrypt.hash(nuevaContrasenha, 10); 
+    const resultado= await this.usuarioRepository.save(usuarioAux);
+    return resultado;   
+  }
   //eliminar los usarios
   async EliminarUsuarioServ(id:number,ci:number){
     let resultado  

@@ -25,6 +25,11 @@ export class BuscarProductosDto{
     etiquetas?:string[]
 
     @IsOptional()
+    habilitarVenta:string
+    @IsOptional()
+    habilitarRefac:string
+
+    @IsOptional()
     @IsIn(['any','all'])
     modoEtiquetas:'any'|'all'='any';
     

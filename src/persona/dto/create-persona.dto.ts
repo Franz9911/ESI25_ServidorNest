@@ -18,6 +18,7 @@ export class CreatePersonaDto {
     @IsNumber()
     @Min(99999,{message:'El numero de documento debe tener 6 digitos o mas'})
     numDoc:number;
+    @IsOptional()
     direccion:string;
     @IsNumber()
     @Min(60000000,{message:'debe ingresara un numero de celular'})

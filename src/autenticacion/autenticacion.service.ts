@@ -1,17 +1,21 @@
-import { Injectable, UnauthorizedException} from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, UnauthorizedException} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsuarioService } from 'src/usuario/usuario.service';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt  from 'bcrypt';
 import { Usuario } from 'src/usuario/entities/usuario.entity';
+import { EmailService } from './common/email-service';
+import { NuevaContrasenhaDto } from './dto/nuevaContrasenha.dto';
 
 
 
 @Injectable()
 export class AutenticacionService {
   private refreshTokens=new Map<number,string>();
+  private codigosActivos=new Map<string,{codigo:string,expiraEn:number,id:number}>();
     constructor(
         private usuarioService:UsuarioService,
+        private emailservice:EmailService,
         private jwtService:JwtService, 
     ){}
     async validarUsuario(login:LoginDto){
@@ -75,5 +79,39 @@ export class AutenticacionService {
       return {
         access_token: this.jwtService.sign(payload),
       } 
+    }
+    //OTP=One-Time Password (Contraseña de un Solo Uso)
+    async recuperarCuentaServ(email:string){  
+      const correoValido =await this.usuarioService.buscarUsuariPorEmail(email);
+      if(!correoValido){
+        return { mensaje: 'Si el correo existe en nuestra DB, recibirás un código.'}
+      }
+      if(correoValido.estado!=='Activo')
+        throw new UnauthorizedException('La cuenta ESI-Tech esta inactiva');
+
+      const codigo=Math.floor(100000+Math.random()*900000).toString();
+      const vigencia=Date.now()+5*60*1000;//expira en  5min
+      try{
+        await this.emailservice.enviarCodigoDeRecuperacion(email,codigo);
+      }catch(error){
+        console.error(`error enviando OTP a:${email}`, error)
+        throw new InternalServerErrorException('No se puedo enviar el correo de recuperacion');
+      }
+      //*****Alerta:guardar en DB o en redis al llevar a produccion.
+      this.codigosActivos.set(email,{codigo,expiraEn:vigencia,id:correoValido.id});
+      return {
+        mensaje: 'Si el correo existe en nuestra base, recibirás un código.'
+      }
+    }
+    async VerificarCodigoServ( dto:NuevaContrasenhaDto){
+      const memoriaCodigo=this.codigosActivos.get(dto.email);
+      if(!memoriaCodigo) throw new BadRequestException('No has solicita ningun Codigo');
+      if(memoriaCodigo.expiraEn<Date.now()) throw new BadRequestException('Tu codigo a expirado');
+      if(memoriaCodigo.codigo!==dto.codigo) throw new BadRequestException('El codigo ingresado es invalido');
+      //actuaizar
+      const usuarioGuardado=await this.usuarioService.cambiarContrasenhaServ(dto.nuevaContrasenha,memoriaCodigo.id.toString())
+      if(usuarioGuardado)this.codigosActivos.delete(dto.email);
+      console.log(usuarioGuardado);
+      return {mensaje: 'Tu contraseña a sido actualizada correctamente!!'}
     }
 }

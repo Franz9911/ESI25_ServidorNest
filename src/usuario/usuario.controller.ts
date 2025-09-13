@@ -1,4 +1,4 @@
-import { Controller, Get,Req, Post, Body, Patch, Param, Delete, Query,UseGuards, Res, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get,Req, Post, Body, Patch, Param, Delete, Query,UseGuards, Res, UnauthorizedException, HttpException, HttpStatus } from '@nestjs/common';
 import { UsuarioService } from './usuario.service';
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
@@ -102,7 +102,7 @@ export class UsuarioController {
   
   @UseGuards(JwtAuthGuard)
   @Get('listar')
-  BuscarTodosLosUsuarios( 
+  async BuscarTodosLosUsuarios( 
     @Query('id') id?: string, //@Query permite que los parametros de Busqueda puedan ser nulos y usar solo los enviados 
     @Query('fechaInicio') fechaInicio?: string,
     @Query('fechaFin') fechaFin?: string,
@@ -113,8 +113,19 @@ export class UsuarioController {
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
   ): Promise< PaginacionResultado<Usuario>> {
-    return this.usuarioService.BuscarTodosLosUsuariosSer2(
+
+    const resultadoUsusarios= await this.usuarioService.BuscarTodosLosUsuariosSer2(
       nombre,apellidos,estado,rol,fechaInicio,fechaFin,+page,+limit)
+      if(resultadoUsusarios){
+        return resultadoUsusarios;
+      }else{
+        throw new HttpException({
+          status:HttpStatus.BAD_REQUEST,
+          error:'no se puede acceder al recurso'},
+          HttpStatus.BAD_REQUEST,{
+            cause:'error'
+        })          
+      }
   } 
 
 }

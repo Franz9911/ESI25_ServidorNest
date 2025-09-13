@@ -1,4 +1,6 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, BadRequestException, Query, UnauthorizedException, Logger, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, 
+  UseGuards, Req, BadRequestException, Query, UnauthorizedException, 
+  Logger, HttpException, HttpStatus, UnprocessableEntityException, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { ProductoService } from './producto.service';
 import { CreateProductoDto } from './dto/create-producto.dto';
 import { UpdateProductoDto } from './dto/update-producto.dto';
@@ -6,10 +8,13 @@ import { JwtAuthGuard } from 'src/autenticacion/common/guards/jwtAuthGuard';
 import * as Busboy from 'busboy';
 import { Readable } from 'stream';
 import { Request } from 'express';
-import { join } from 'path';
 import { createWriteStream, existsSync, mkdirSync } from 'fs';
 import { BuscarProductosDto } from './dto/find-producto.dto';
-
+import { ParseIntPipe } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
+import { Producto } from './entities/producto.entity';
 
 
 @Controller('producto')
@@ -18,130 +23,98 @@ export class ProductoController {
 
   constructor(private readonly productoService: ProductoService) {}
   @UseGuards(JwtAuthGuard)
-  @Post('registrarProducto')
-  async crearProducto(
-    @Req() req:Request & Readable) {
-    console.log("ingresamos");
-     const usuarioId=(req as any).user.id;
-     console.log('id usuario', usuarioId);
-     this.logger.log("prueba 1")
-    return new Promise((resolve,rejects)=>{
-      const busboy =Busboy({headers:req.headers});
-      const folderProducto="productos";
-      //let body:Partial <CreateProductoDto>={};
-      const body: any = {};
-      const tamañoMax=1*1024*1024;
-      let imagenRuta:string|null=null;
-      
-      busboy.on('file',(fildname,file,info)=>{
-        console.log('ingresamos a busboy');
-        let { filename, mimeType } = info;
-         // Validación MIME tipo imagen
-         if (!mimeType.startsWith('image/')) { //validamos que el archivo sea una imagen.
-          return rejects( new HttpException({
-            status:HttpStatus.UNPROCESSABLE_ENTITY,
-            error:'Solo  se perite guardar imagenes'
-            },HttpStatus.UNPROCESSABLE_ENTITY,{
-              cause: 'Solo  se perite guardar imagenes'
-            })
-
-          );
-        }
-        console.log(filename)
+  @Post('registrarProducto') 
+  @UseInterceptors(FileInterceptor('imagenProd',{
+    storage:diskStorage({
+      destination:join(__dirname,'..','..','uploads','productos'),
+      filename:(req,file,cb)=>{
         const fecha=new Date().toISOString().split('T')[0];
-        const timestamp = Date.now(); // milisegundo
-        const partes = filename.split('.');
+        const randon = Date.now(); // milisegundo
+        const partes = file.originalname.split('.');
         const nombreImagen=partes[0].replace(/\s+/g, '_'); // eliminar espacios;
-        const extencionImg=partes[1];
-        if(extencionImg!=='avif'){ //validamos que el formato sea .avif
-          //una persona puede cambiar la extencion del archivo y hacerla pasar por .avif 
-          return rejects(new HttpException({
-            status:HttpStatus.UNPROCESSABLE_ENTITY,
-            error:'Solo  se perite formato .avif para las imagenes'
-            },HttpStatus.UNPROCESSABLE_ENTITY,{
-              cause: 'Solo  se perite formato .avif para las imagenes'
-            })
-          )
-        }
-        filename=fecha+nombreImagen+timestamp+"."+extencionImg;
-        console.log("nombre de imagen",filename);
-        const folderPaht=join(__dirname,'..','..',folderProducto);
-        console.log('Subiendo el archivo a:', folderPaht);
-        if(!existsSync(folderPaht)){
-          mkdirSync(folderPaht,{recursive:true});
-        }
-        const savePath=join(folderPaht,filename);
-        let totalBytes=0;
-        
-        file.on('data', (chunk) => { //chunk son fracmentos de de la imagen. 
-          totalBytes += chunk.length; // al sumar los chun tendremos el tamaño de la imagen.
-          if(totalBytes>tamañoMax){
-            file.unpipe();
-            rejects(new HttpException({
-              status:HttpStatus.UNPROCESSABLE_ENTITY,
-              error:'Archivo demasiado grande (máx 1MB).'
-              },HttpStatus.UNPROCESSABLE_ENTITY,{
-                cause: 'Archivo demasiado grande (máx 1MB).'
-              })
-            );
-          } 
-        });
-        file.pipe(createWriteStream(savePath));
-        imagenRuta=folderProducto+"/"+filename;
-        console.log('archivo guardado en: '+imagenRuta);
-
-      });
-      busboy.on('field',(fieldname,val)=>{ //extraemos y guardamos los datos de formData en body. 
-        body[fieldname]=val; //fieldname: nombre del campo, val: valor del campo  
-      });
-      busboy.on('finish', async () => { //al terminar la lectura de los datos del formData se accede a esta seccion del codigo.
-        try{
-          //let datosAux:CreateProductoDto=body;
-          const {marcaId,marcaNombre, ...datosAux}=body;
-          const {modelo,habilitarVenta,habilitarRefac,unidadesDis, ...marcaAux}=body
-          console.log(datosAux);
-          datosAux.imagenProd=imagenRuta;
-          if( !datosAux.habilitarRefac || !datosAux.unidadesDis || !datosAux.habilitarVenta || !datosAux.modelo)
-          {
-            throw new HttpException({
-              status:HttpStatus.UNPROCESSABLE_ENTITY,
-              error:'Faltan datos obligatorios'
-            },HttpStatus.UNPROCESSABLE_ENTITY,{
-              cause: 'Faltan datos obligatorios'
-            })
-          }
-          const datosActualizados= await this.productoService.crearProductoServ(
-          datosAux,marcaAux,usuarioId);
-          //console.log('enviando body',datosAux);
-          resolve(datosActualizados);//si todo sale bien. resolvemos la promesa  
-        }catch(error){
-          rejects(error); //si sale mal. informamos del error 
-        }  
-      });
-    (req as Readable).pipe(busboy)  
-    }) 
+        const ext=extname(file.originalname).toLowerCase();
+        cb(null,`prod-${fecha}-${nombreImagen}-${randon}${ext}`);
+      }
+    }),
+    limits:{fileSize:1*1024*1024},//1MB
+    fileFilter:(req, file, cb)=> {
+      if(!file.mimetype.startsWith('image/')){
+        return cb(new BadRequestException('Solo se permite archivos de imagen'),false);
+      }
+      if(!file.originalname.toLowerCase().endsWith('.avif')){
+        return cb(new BadRequestException('Solo se permite el formato .avif para las imagenes'),false);
+      }
+      cb(null,true);
+    },
+  }))
+  async crearProducto(
+    @Body()creaproducto:CreateProductoDto,
+    @Req() req:any,
+    @UploadedFile()file?:Express.Multer.File) {
+    console.log("ingresamos");
+    const usuarioId=req.user.id; 
+    const marca={
+      id:creaproducto.marcaId,
+      nombre:creaproducto.marcaNombre
+    }
+    if(file)  creaproducto.imagenProd = `uploads/productos/${file.filename}`;
+    return this.productoService.crearProductoServ(creaproducto,marca,usuarioId);
   }
 
   @Get('buscarProductos')
    async buscarProductos(@Query() filtros: BuscarProductosDto) {
     if(!filtros.limit || !filtros.page) {
-      return new UnauthorizedException('La consulta no cuenta con la informacion necesaria');
+      throw new UnauthorizedException('La consulta no cuenta con la informacion necesaria');
     }
       return await this.productoService.buscarProductosServ(filtros);
   }
 
-  @Get(':id')
-  buscarProductoPorId(@Param('id') id: string) {
-    return this.productoService.buscarProductoPorIdServ(+id);
+  @Get('detalleProducto')
+  async buscarProductoPorId(
+    @Query('id') id?: string, 
+    ) {
+    return await this.productoService.buscarProductoPorIdServ(+id);
+  }
+  //Eiminar producto
+  //entrada id de producto
+  @Delete('eliminarProducto')
+  eliminarProducto(@Query('id', ParseIntPipe) id: number) {
+    return this.productoService.eliminarProductoServ(id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProductoDto: UpdateProductoDto) {
-    return this.productoService.update(+id, updateProductoDto);
+  @UseGuards(JwtAuthGuard)
+  @Patch('actualizar/:id')
+  @UseInterceptors(FileInterceptor('imagenProd',{
+    storage:diskStorage({
+      destination:join(__dirname,'..','..','uploads','productos'),
+      filename:(req,file,cb)=>{
+        const fecha=new Date().toISOString().split('T')[0];
+        const randon = Date.now(); // milisegundo
+        const partes = file.originalname.split('.');
+        const nombreImagen=partes[0].replace(/\s+/g, '_'); // eliminar espacios;
+        const ext=extname(file.originalname).toLowerCase();
+        cb(null,`prod-${fecha}-${nombreImagen}-${randon}${ext}`);
+      },
+    }),
+    limits:{fileSize:1*1024*1024}, //1MB
+    fileFilter:(req,file,cb)=>{
+      if(!file.mimetype.startsWith('image/')){
+        return cb(new BadRequestException('Solo se permite archivos de imagen'),false);
+      }
+      if(!file.originalname.toLowerCase().endsWith('.avif')){
+        return cb(new BadRequestException('Solo se permite el formato .avif para las imagenes'),false);
+      }
+      cb(null,true);
+    }
+  }))
+  async actualizarProducto(
+    @Param('id',ParseIntPipe) id: number,
+    @Body() UpdateProductoDto:UpdateProductoDto,
+    @Req() req:any,
+    @UploadedFile() file?: Express.Multer.File){
+      const usuarioId=req.user.id;
+      if(file)  UpdateProductoDto.imagenProd = `uploads/productos/${file.filename}`;
+      return this.productoService.actualizarSer(id,UpdateProductoDto,usuarioId)
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.productoService.remove(+id);
-  }
 }

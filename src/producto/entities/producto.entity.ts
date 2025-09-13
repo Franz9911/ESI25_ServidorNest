@@ -6,14 +6,17 @@ export class Producto{
     @PrimaryGeneratedColumn('increment')
     id:number;
 
-    @Column({nullable: true, length:60,comment:'Modelo del producto'})
-    modelo:string;
+    @Column({length:100,comment:'Modelo del producto'})
+    modelo:string; 
 
     @Column({nullable: true, type:'smallint', comment:'Nivel minimo de unidades disponibles en almacen'})
     minUnidades:number;
 
     @Column({type:'smallint', comment:'Unidades disponibles en almacen'})
     unidadesDis:number;
+
+    @Column({nullable:true, type:"decimal", comment:'percio refenrencial del producto'})
+    precio:number;
 
     @Column({nullable: true, length:2550,comment:'descripcion tecnica del producto'})
     descripTec:string;

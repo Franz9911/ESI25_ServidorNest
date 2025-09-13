@@ -16,7 +16,7 @@ export class PersonaController {
   async create(@Body() createPersonaDto: CreatePersonaDto,
   @Req()req:Request & Readable,) {
     const usuarioResponsableId:number=(req as any).user.id;
-    console.log("ingresamos a controler");
+    console.log("ingresamos a controler",createPersonaDto);
     console.log(usuarioResponsableId);
     const res=await this.personaService.create(createPersonaDto, usuarioResponsableId);
     console.log(res);
