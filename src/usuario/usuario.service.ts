@@ -43,7 +43,7 @@ export class UsuarioService {
   }
   async CrearUsuario(createUsuarioDto: CreateUsuarioDto) {
     this.logger.log("crear usuario")   
-    const personaExiste = await this.PersonaServ.findOne(createUsuarioDto.persona.id);
+    const personaExiste = await this.PersonaServ.buscarPorId(createUsuarioDto.persona.id);
     console.log(personaExiste);
     if(!personaExiste) throw new ConflictException("error: la persona no existe en la db")
     let personaConUsuario:any= await this.usuarioRepository.findOne({ //buscaremos si la persona tiene usuario
@@ -77,10 +77,7 @@ export class UsuarioService {
         throw new UnprocessableEntityException({
           message: 'Verifique los datos enviados!!',
           cause:'Verifica los datos enviados'
-        }
-          
-          
-        );
+        });
       }
     }
   }
@@ -112,8 +109,6 @@ export class UsuarioService {
     return {
       data,
       totalItems:total,
-      currentPage:page,
-      itemsPerPage:limit
     }
   }
 

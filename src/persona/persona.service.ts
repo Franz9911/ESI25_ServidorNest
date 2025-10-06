@@ -49,20 +49,18 @@ export class PersonaService {
   }
 
   async findAll(page?:number,limit?:number):Promise<PaginacionResultado<Persona>> {
-    const[data,total]= await this.personaRepository.findAndCount({
+    const[data,totalItems]= await this.personaRepository.findAndCount({
       order:{id:'DESC'},
       skip:(page-1)*limit,
       take:limit
     });
     return{
       data,
-      totalItems:total,
-      currentPage:page,
-      itemsPerPage:limit
+      totalItems,
     }
   }
 
-  async findOne(id: number) {
+  async buscarPorId(id: number) {
     return await this.personaRepository.findOneBy({id});
   }
   async BuscarPorCedula(ci:number,tipoDoc:string){
@@ -91,12 +89,10 @@ export class PersonaService {
       query.orderBy('persona.nombre','ASC')
       query.skip((page - 1) * limit) //inicia la busqueda desde el id = ((page - 1) * limit)
       query.take(limit) //si encuentra n registros detiene la busqueda. n=limit 
-      const [data,total]= await query.getManyAndCount(); //realizamos la consulta.
+      const [data,totalItems]= await query.getManyAndCount(); //realizamos la consulta.
     return {
       data,
-      totalItems:total,
-      currentPage:page,
-      itemsPerPage:limit
+      totalItems,
     }
   }
 

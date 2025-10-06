@@ -6,7 +6,8 @@ export class UsuarioSeeder {
   constructor(
     private readonly usuarioService: UsuarioService,
     private readonly personaService:PersonaService) {}
-
+    //esta funcion revisa si existen usuarios registrados en la DB. 
+  //Si no tenemos por lo menos un usuario llamara al metodo crearUsuariosPorDefecto()  
   async run() {
     const usuarios = await this.usuarioService.contarUsuarios();
     if (usuarios === 0) {

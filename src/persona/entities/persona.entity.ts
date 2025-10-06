@@ -1,6 +1,8 @@
 
+import { Empresa } from "src/empresa/entities/empresa.entity";
+import { Representante } from "src/representante/entities/representante.entity";
 import { Usuario } from "src/usuario/entities/usuario.entity";
-import { Column, CreateDateColumn, Entity, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity()
 export class Persona {
@@ -27,5 +29,9 @@ export class Persona {
     @CreateDateColumn({comment:'Fecha de creacion del registro de persona'})
     fechaReg:Date;
     @OneToOne(()=>Usuario,usuario=>(usuario.persona))
-    usuario:Usuario;  
+    usuario:Usuario;
+
+    @OneToMany(() => Representante, rep => rep.persona)
+    representantes: Representante[];
+    //cliente
 }

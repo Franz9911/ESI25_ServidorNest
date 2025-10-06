@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 import { throwError } from 'rxjs';
 import { BuscarProductosDto } from 'src/producto/dto/find-producto.dto';
 import { buscarMarcaDto } from './dto/buscar-marca.dto';
+import { PaginacionResultado } from 'src/Paginacion-resultado.dto';
 
 @Injectable()
 export class MarcaService {
@@ -33,7 +34,7 @@ export class MarcaService {
     }
   }
 
-  async buscarMarcaPorNombreSer(filtros:buscarMarcaDto) {
+  async buscarMarcaPorNombreSer(filtros:buscarMarcaDto):Promise<PaginacionResultado<Marca>> {
     const {nombre,limit,page}=filtros;
     const query =await this.marcaRepository.createQueryBuilder('marca');
     query.addSelect('marca');
@@ -48,8 +49,6 @@ export class MarcaService {
     console.log(marcas)
     return {
       totalItems,
-      currentPage:+page,
-      itemsPerPage:limit, 
       data:marcas,
     }
   }

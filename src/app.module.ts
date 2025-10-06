@@ -19,6 +19,14 @@ import { ProductoModule } from './producto/producto.module';
 import { Producto } from './producto/entities/producto.entity';
 import { MarcaModule } from './marca/marca.module';
 import { Marca } from './marca/entities/marca.entity';
+import { EmpresaModule } from './empresa/empresa.module';
+import { Empresa } from './empresa/entities/empresa.entity';
+import { ProveedorModule } from './proveedor/proveedor.module';
+import { Proveedor } from './proveedor/entities/proveedor.entity';
+import { RepresentanteModule } from './representante/representante.module';
+import { Representante } from './representante/entities/representante.entity';
+import { CuentaBancariaModule } from './cuenta-bancaria/cuenta-bancaria.module';
+import { CuentaBancaria } from './cuenta-bancaria/entities/cuenta-bancaria.entity';
 
 
 @Module({
@@ -34,7 +42,8 @@ import { Marca } from './marca/entities/marca.entity';
       username: 'postgres',
       password: '5432',
       database: 'ESI-DB',
-      entities: [Usuario,Persona,RegistroActividad,Producto,Marca],
+      entities: [Usuario,
+        Persona,RegistroActividad,Producto,Marca,Empresa,Proveedor,Representante,CuentaBancaria],
       synchronize: true, // ¡Usar true solo en desarrollo!
     }),
     ThrottlerModule.forRoot([
@@ -50,6 +59,10 @@ import { Marca } from './marca/entities/marca.entity';
     RegistroActividadModule,
     ProductoModule,
     MarcaModule,
+    EmpresaModule,
+    ProveedorModule,
+    RepresentanteModule,
+    CuentaBancariaModule,
    ],
   controllers: [AppController],
   providers: [AppService,

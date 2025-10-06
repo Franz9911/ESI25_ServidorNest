@@ -11,6 +11,7 @@ import { error } from 'console';
 import { Marca } from 'src/marca/entities/marca.entity';
 import { Persona } from 'src/persona/entities/persona.entity';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { PaginacionResultado } from 'src/Paginacion-resultado.dto';
 
 
 @Injectable()
@@ -65,7 +66,7 @@ export class ProductoService {
     }
   }
 
-  async buscarProductosServ(filtros:BuscarProductosDto) {
+  async buscarProductosServ(filtros:BuscarProductosDto):Promise<PaginacionResultado<Producto>> {
     //const contiene todos los datos ingresados en filtros.
     const {marcaId,modelo,categoria,etiquetas,unidadesDis,modoEtiquetas,habilitarVenta,habilitarRefac,page,limit}=filtros;
     const query=this.productoRepository.createQueryBuilder('producto');
@@ -118,13 +119,10 @@ export class ProductoService {
     query.orderBy('producto.marca','ASC');
     query.skip((page-1)*limit).take(limit);
     query.relation['marca'];
-    const [productos,total]=await query.getManyAndCount();
+    const [productos,totalItems]=await query.getManyAndCount();
     const currentPage=page; //esta lina se puede suprimir corregir el error primero
     return {
-      
-      totalItems:total,
-      itemsPerPage:limit
-      ,currentPage,limit, 
+      totalItems,
       data:productos,
     }
   }
