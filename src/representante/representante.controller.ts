@@ -28,8 +28,9 @@ export class RepresentanteController {
     return this.representanteService.update(+id, updateRepresentanteDto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.representanteService.remove(+id);
+  @Delete('eliminar/:id')
+  EliminarRepresentante(@Param('id') id: string) {
+    console.log(id);
+    return this.representanteService.EliminarRepresentanteServ(+id);
   }
 }

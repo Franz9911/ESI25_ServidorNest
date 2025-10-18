@@ -17,10 +17,8 @@ export class CreateEmpresaDto {
    @Type(() => Number)
    celular:number;
    @IsOptional()
-   @IsEmail()
    correoE:string;
    @IsOptional()
-   @IsUrl()
    web:string;
    @Length(7,7)
    @IsString()

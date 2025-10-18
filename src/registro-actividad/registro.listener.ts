@@ -17,6 +17,7 @@ export class RegistroListener{
             datos:event.datos 
         })     
     }
+    /************Producto ****************/
     @OnEvent('producto.creado')
     async handledProductoCreado(event :any){
         console.log("ingresaos al listener");
@@ -37,5 +38,16 @@ export class RegistroListener{
             idReferencial:event.productoId,
             datos:event.datos 
         })     
+    }
+    /**********Empresa *********/
+    @OnEvent('empresa.modificada')
+    async handledEmpresaEditada(event:any){
+        await this.registroActividadService.create({
+            usuarioResponsable:event.usuarioResponsable,
+            accion:'modificar',
+            entidad:'empresa',
+            idReferencial:event.empresaId,
+            datos:event.datos,
+        })
     }
 }

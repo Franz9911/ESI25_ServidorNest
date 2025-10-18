@@ -1,19 +1,19 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
 import { CreateEmpresaDto } from './dto/create-empresa.dto';
 import { UpdateEmpresaDto } from './dto/update-empresa.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Empresa } from './entities/empresa.entity';
-import { Between, ILike, Repository } from 'typeorm';
+import { Between, ILike, Not, Raw, Repository } from 'typeorm';
 import { PersonaService } from 'src/persona/persona.service';
 import { PaginacionResultado } from 'src/Paginacion-resultado.dto';
-
+import { EventEmitter2 } from '@nestjs/event-emitter';
 @Injectable()
 export class EmpresaService {
   constructor(
     @InjectRepository(Empresa)
     private empresaRepository: Repository<Empresa>, 
-    
-    ){}
+    private eventEmiter:EventEmitter2,  
+  ){}
   async crearEmpresaServ(dto: CreateEmpresaDto) {
     const empresaExiste= await this.buscarEmpresaNIT(dto.numDoc);
     if(empresaExiste){
@@ -98,8 +98,25 @@ export class EmpresaService {
     return `This action updates a #${id} empresa`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} empresa`;
+  async EliminarEmpresaServ(id: number) {
+    const EmpresaExiste= await this.empresaRepository.findOne({
+      where:{id}
+    });
+    if(!EmpresaExiste){
+      //error para cunado no se encentra un recurso 
+      throw new NotFoundException('No se encuentra la Empresa!!');
+    }
+    try {
+      await this.empresaRepository.delete({id});
+      return {mensaje:'empresa Eliminada correctamente'};
+    } catch (error) {
+      if (error.code === '23503') { // Código de violación de clave foránea en Postgres
+        console.log(error.table)
+        throw new ConflictException(`No se puede eliminar la Empresa porque tiene registros relacionados con ${error.table}.`);
+      }
+      throw new InternalServerErrorException('Error al eliminar la Empresa');
+    }
+    //return EmpresaExiste;
   }
   async buscarEmpresaNIT(nit:number){
     const empresa= await this.empresaRepository.findOne({
@@ -112,6 +129,7 @@ export class EmpresaService {
 
   //buscar representantes por id de empresa
   async buscarEmpresaPorId(id:number){
+    console.log('prueva');
     const empresaAux= await this.empresaRepository.findOne({
       where:{id:id},
       relations:['representantes','representantes.persona','cuentasBancarias'],
@@ -123,6 +141,53 @@ export class EmpresaService {
     const empresaAux= await this.empresaRepository.findOne({
       where:{id:id},
     });
+    if(!empresaAux) throw new NotFoundException('no se puede encontrar este recurso')
     return empresaAux;
+  }
+
+  async ModifcarEmpresaServ(id:number,dto,usuarioId){
+    const empresaExiste= await this.buscarEmpresaPorIdInterno(id);
+    if(empresaExiste.numDoc !== dto.numDoc){
+      const empresaDuplicado = await this.empresaRepository.findOne({
+        where:{
+          tipoDoc:dto.tipoDoc,
+          numDoc:dto.numDoc,
+          id:Not(id)
+        }
+      });
+      if(empresaDuplicado){
+        throw new ConflictException(`Ya existe una empresa registrada con este docummento: ${empresaDuplicado.tipoDoc} ${empresaDuplicado.numDoc}  `)
+      }
+    }
+    if(empresaExiste.razonSocial.trim().toLowerCase()!==dto.razonSocial.trim().toLowerCase()){
+      const empresaDuplicado= await this.empresaRepository.findOne({
+        where:{razonSocial: Raw(alias => `LOWER(${alias}) = LOWER(:razonSocial)`, { //raw es para el LOWER
+          razonSocial: dto.razonSocial.trim(),
+        }),
+          id: Not(id),}
+      });
+      if(empresaDuplicado){
+        throw new ConflictException(`Ya existe una empresa registrada con: ${empresaDuplicado.razonSocial}`);
+      }
+    }
+    try {
+      Object.assign(empresaExiste, dto);
+      const resultado =await this.empresaRepository.save(empresaExiste);
+      if(resultado){
+        console.log('regitrando en act',resultado)
+        this.eventEmiter.emit('empresa.modificada',{
+          empresaId:resultado.id,
+          usuarioResponsable:usuarioId,
+          datos:resultado
+        });
+        return resultado;
+      }
+      
+    } catch (error) {
+      throw new InternalServerErrorException('Error al guardar los cambios de la empresa');
+    }
+
+
+
   }
 }

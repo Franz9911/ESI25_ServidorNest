@@ -1,8 +1,11 @@
-import { Controller, Get, Post, Body,Req, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body,Req, Patch, Param, Delete,
+   Query, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { EmpresaService } from './empresa.service';
 import { CreateEmpresaDto } from './dto/create-empresa.dto';
 import { UpdateEmpresaDto } from './dto/update-empresa.dto';
-
+import { JwtAuthGuard } from 'src/autenticacion/common/guards/jwtAuthGuard';
+import { Request } from 'express'; 
+import { Readable } from 'stream';
 @Controller('empresa')
 export class EmpresaController {
   constructor(private readonly empresaService: EmpresaService) {}
@@ -34,18 +37,26 @@ export class EmpresaController {
     return await this.empresaService.EmpresasSinProveedorServ(razonSocial,nit,datosPorPagina,paginaActual);
   }
 
+  //buscar empresa , repersesntantes, cuentas bancarias
   @Get('representantes')
   buscarEmpresaPorId(@Query('id') id: string) {
     return this.empresaService.buscarEmpresaPorId(+id);
   }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateEmpresaDto: UpdateEmpresaDto) {
-    return this.empresaService.update(+id, updateEmpresaDto);
+  @UseGuards(JwtAuthGuard)
+  @Patch('modificar/:id')
+  ModifcarEmpresa(
+    @Param('id') id: string, 
+    @Req() req: Request & Readable,
+    @Body() updateEmpresaDto: UpdateEmpresaDto) {
+     //const usuarioId= (req as any);
+     const p=(req as any ).user.id;
+     console.log(p);
+    //console.log(req);
+    return this.empresaService.ModifcarEmpresaServ(+id, updateEmpresaDto,p);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.empresaService.remove(+id);
+  @Delete('eliminar/:id')
+  EliminarEmpresa(@Param('id') id: string) {
+    return this.empresaService.EliminarEmpresaServ(+id);
   }
 }

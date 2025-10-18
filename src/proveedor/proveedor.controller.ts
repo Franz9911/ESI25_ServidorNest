@@ -20,18 +20,20 @@ export class ProveedorController {
     return this.proveedorService.buscarEmpresaProveedorServ(dto);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.proveedorService.findOne(+id);
+  @Get('detalle')
+  findOne(@Query('id') id: string) {
+    return this.proveedorService.buscarProveedorPorId(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProveedorDto: UpdateProveedorDto) {
-    return this.proveedorService.update(+id, updateProveedorDto);
+  @Patch('modificar/:id')
+  ModifcarProveedor(
+    @Param('id') id: string, 
+    @Body() dto: UpdateProveedorDto) {
+    return this.proveedorService.ModifcarProveedorServ(+id, dto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.proveedorService.remove(+id);
+  @Delete('eliminar/:id')
+  EliminarProveedor(@Param('id') id: string) {
+    return this.proveedorService.EliminarProveedorServ(+id);
   }
 }

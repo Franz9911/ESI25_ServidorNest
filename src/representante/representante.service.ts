@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException, ServiceUnavailableException, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
 import { CreateRepresentanteDto } from './dto/create-representante.dto';
 import { UpdateRepresentanteDto } from './dto/update-representante.dto';
 import { Repository } from 'typeorm';
@@ -59,7 +59,19 @@ export class RepresentanteService {
     return `This action updates a #${id} representante`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} representante`;
+  async EliminarRepresentanteServ(id: number) {
+    const representanteExiste = await this.representanteRepository.findOne({
+      where:{id}
+    });
+    if(!representanteExiste){
+      throw new NotFoundException('No se encuentra al representante en la db')
+    }
+    try {
+      const resultado= await this.representanteRepository.delete(id);
+      return resultado; 
+    } catch (error) {
+      throw new ServiceUnavailableException('No se puede acceder a la DB')
+    } 
+    //return `This action removes a #${id} representante`;
   }
 }

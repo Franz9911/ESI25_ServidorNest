@@ -27,6 +27,8 @@ import { RepresentanteModule } from './representante/representante.module';
 import { Representante } from './representante/entities/representante.entity';
 import { CuentaBancariaModule } from './cuenta-bancaria/cuenta-bancaria.module';
 import { CuentaBancaria } from './cuenta-bancaria/entities/cuenta-bancaria.entity';
+import { PdfModule } from './pdf/pdf.module';
+
 
 
 @Module({
@@ -63,6 +65,8 @@ import { CuentaBancaria } from './cuenta-bancaria/entities/cuenta-bancaria.entit
     ProveedorModule,
     RepresentanteModule,
     CuentaBancariaModule,
+    PdfModule,
+   
    ],
   controllers: [AppController],
   providers: [AppService,

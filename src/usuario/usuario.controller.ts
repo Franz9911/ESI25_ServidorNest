@@ -39,7 +39,6 @@ export class UsuarioController {
     @Body() updateUsuarioDto: UpdateUsuarioDto) {
       const usuarioActualizado= await this.usuarioService.actualizarUsuarioServ(+id, updateUsuarioDto);
       console.log("usuarioActualizado")
-      console.log(usuarioActualizado);
       return usuarioActualizado;
   }
   //metodo para que un usuario actualiza su informacion de ususario. 
@@ -49,7 +48,8 @@ export class UsuarioController {
   async editarMiPerfil( //recibe los datos de un formData. 
     @Req() req: Request & Readable,){
     const userId = (req as any).user.id; // Aquí obtenemos el id del usuario autenticado
-    console.log(userId);
+    const p=(req as any );
+    console.log(p);
     return new Promise((resolve, rejects)=>{
       const folderUsuario ="usuarios";
       const busboy=Busboy({headers:req.headers});

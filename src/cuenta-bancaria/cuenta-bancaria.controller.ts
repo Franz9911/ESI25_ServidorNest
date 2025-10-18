@@ -24,13 +24,17 @@ export class CuentaBancariaController {
     return this.cuentaBancariaService.listarPorEmpresaServ(+id);
   }
 
-  @Patch(':id')
+  @Get('buscarId')
+  BuscarPorId(@Query('id') id: string) {
+    return this.cuentaBancariaService.BuscarPorIdServ(+id);
+  }
+  @Patch('modificar/:id')
   update(@Param('id') id: string, @Body() updateCuentaBancariaDto: UpdateCuentaBancariaDto) {
-    return this.cuentaBancariaService.update(+id, updateCuentaBancariaDto);
+    return this.cuentaBancariaService.ModificarCuentaBServ(+id, updateCuentaBancariaDto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.cuentaBancariaService.remove(+id);
+  @Delete('eliminar/:id')
+  EliminarCuenta(@Param('id') id: string) {
+    return this.cuentaBancariaService.EliminarCuentaServ(+id);
   }
 }

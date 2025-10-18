@@ -3,8 +3,10 @@ import { IsDate, IsDateString, IsInt, IsOptional, Length, Min } from "class-vali
 
 export class FindProveedorDto{
     @IsOptional()
-    @Length(6,8)
+    @Length(0,8)
     estado:string;
+    @IsOptional()
+    rubro:string;
     @IsOptional()
     nombreEmpresa:String;
     @IsOptional()

@@ -23,7 +23,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt_cookie_accessTo
     }
     //esta funcion se ejecuta de forma autoatica mediante passport.
     async validate(payload: any){ //validamos la cookie.
-        // el return va al controlador que hizo la solicitud.
+        // el return va al controlador que hizo la solicitud. 
         return { 
             id:payload.sub,
             nombre:payload.nombre,

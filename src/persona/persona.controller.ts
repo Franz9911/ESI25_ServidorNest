@@ -41,15 +41,16 @@ export class PersonaController {
      return this.personaService.buscarPersonasSinUsuario(nombre,apellidos,+page,+limit);
   }
   
-  @Get(':id')
-  findOne(@Param('id') id: string) {
+  @Get('buscarId')
+  BuscarPorId(@Query('id') id: string) {
     return this.personaService.buscarPorId(+id);
   }
 
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePersonaDto: UpdatePersonaDto) {
-    return this.personaService.update(+id, updatePersonaDto);
+  @Patch('modificar/:id')
+  async update(@Param('id') id: string, 
+  @Body() dto: UpdatePersonaDto) {
+    return await this.personaService.update(+id, dto);
   }
 
   @Delete('Eliminar/:id')

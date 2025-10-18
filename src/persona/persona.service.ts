@@ -1,11 +1,12 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { CreatePersonaDto } from './dto/create-persona.dto';
 import { UpdatePersonaDto } from './dto/update-persona.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Persona } from './entities/persona.entity';
-import { Repository } from 'typeorm';
+import { Repository, Not } from 'typeorm';
 import { PaginacionResultado } from 'src/Paginacion-resultado.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { PartialType } from '@nestjs/mapped-types';
 
 @Injectable()
 export class PersonaService {
@@ -96,8 +97,37 @@ export class PersonaService {
     }
   }
 
-  update(id: number, updatePersonaDto: UpdatePersonaDto) {
-    return `This action updates a #${id} persona`;
+  async update(id: number, dto: UpdatePersonaDto) {
+    let personaExiste= await this.personaRepository.findOne({
+      where:{id}
+    });
+    if(!personaExiste){
+      throw new UnauthorizedException('La Persona no puede ser encontradaen en la DB');
+    }
+    const personaDuplicada=await this.personaRepository.findOne({
+      where:{
+        tipoDoc: dto.tipoDoc,
+        numDoc: dto.numDoc,
+        id: Not(id),
+      }
+    });
+    if(personaDuplicada){
+      throw new BadRequestException(`Este Docuento ya es registrado con ${personaDuplicada.nombre} ${personaDuplicada.apellidos}`)
+    }
+    personaExiste.nombre=dto.nombre;
+    personaExiste.apellidos=dto.apellidos;
+    personaExiste.celular=dto.celular;
+    personaExiste.direccion=dto.direccion;
+    personaExiste.numDoc=dto.numDoc;
+    personaExiste.tipoDoc=dto.tipoDoc;
+    personaExiste.correoE=dto.correoE;
+    try {
+      const personaAux= await this.personaRepository.save(personaExiste);
+      return personaAux;
+    } catch (error) {
+      throw new ServiceUnavailableException('No se puede acceder a la DB!!')
+    }
+    
   }
 
   async remove(id: number) {

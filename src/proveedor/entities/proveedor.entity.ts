@@ -1,3 +1,4 @@
+import { IsOptional } from "class-validator";
 import { Empresa } from "src/empresa/entities/empresa.entity";
 import { Column, CreateDateColumn, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 
@@ -9,10 +10,15 @@ export class Proveedor {
     estado:string;
     @Column({nullable:true,length:255,comment:'codiciones de pago: plazo de pago, interes,anticipo, etc'})
     condicionesPago:string;
+    @Column({nullable:true,length:80, comment:'Area en la que se desempeña el proveedor'})
+    rubro:string
+    @Column({nullable:true,comment:'puntuacion del representante deacuerdo a su desempeño laboral'})
+    calificacion:number;
     @CreateDateColumn({comment:'fecha de regsitro proveedor'})
     fechaReg:Date;
     @OneToOne(()=>Empresa,(empresa)=>empresa.proveedor)
     @JoinColumn({name:'empresa',referencedColumnName:'id'})
     empresa:Empresa;
-    //calificacion:number
+  
+
 }

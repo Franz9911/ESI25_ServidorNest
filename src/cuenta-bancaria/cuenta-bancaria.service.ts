@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
 import { CreateCuentaBancariaDto } from './dto/create-cuenta-bancaria.dto';
 import { UpdateCuentaBancariaDto } from './dto/update-cuenta-bancaria.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -24,7 +24,8 @@ export class CuentaBancariaService {
           id:empresaExiste.id,
         },
         numCuenta:dto.numCuenta,
-        entidad:dto.entidad
+        entidad:dto.entidad,
+        //agregar al titular en la consulta
       }
     });
     if(cuentaDuplicada) throw new UnauthorizedException('No esta permitido duplicar registros de cuentas bancarias')
@@ -65,11 +66,43 @@ export class CuentaBancariaService {
     return cuentas;
   }
 
-  update(id: number, updateCuentaBancariaDto: UpdateCuentaBancariaDto) {
-    return `This action updates a #${id} cuentaBancaria`;
-  }
 
-  remove(id: number) {
-    return `This action removes a #${id} cuentaBancaria`;
+
+  async EliminarCuentaServ(id: number) {
+    const cbExiste= await this.cuentaBanRepository.findOne({
+      where:{id}
+    })
+    if(!cbExiste){
+      throw new NotFoundException('No se puede acceder a la cuenta bancaria')
+    }
+    try {
+      const reusltado=await this.cuentaBanRepository.delete(id)
+      return cbExiste;
+    } catch (e) {
+      if(e==='23503'){
+        throw new ConflictException(`Error la cuenta esta relacionada en ${e.table}`)
+      }
+      throw new NotFoundException('No se puede acceder al registro de cuenta bancaria')
+    }
+    
+  }
+  async ModificarCuentaBServ(id:number,dto:UpdateCuentaBancariaDto){
+    const cbExiste=await this.BuscarPorIdServ(id);
+    let cbAux =dto as any;
+    cbAux.id=cbExiste.id;
+    cbAux.fechaReg=cbExiste.fechaReg;
+    console.log( typeof cbAux);
+    const cbGuardada= await this.cuentaBanRepository.save(cbAux);
+    return cbGuardada;
+  }
+  async BuscarPorIdServ(id:number){
+    const cbExiste= await this.cuentaBanRepository.findOne({
+      where:{ id},
+      relations:['empresa']
+    });
+    if(!cbExiste){
+      throw new NotFoundException('No se puede encontrar la cuenta bancaria')
+    }
+    return cbExiste;
   }
 }

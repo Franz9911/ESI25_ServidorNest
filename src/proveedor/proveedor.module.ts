@@ -12,5 +12,6 @@ import { PersonaModule } from 'src/persona/persona.module';
   ],
   controllers: [ProveedorController],
   providers: [ProveedorService],
+  exports:[ProveedorService],
 })
 export class ProveedorModule {}

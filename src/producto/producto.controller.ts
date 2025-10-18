@@ -51,7 +51,7 @@ export class ProductoController {
     @Body()creaproducto:CreateProductoDto,
     @Req() req:any,
     @UploadedFile()file?:Express.Multer.File) {
-    console.log("ingresamos");
+    //console.log(req);
     const usuarioId=req.user.id; 
     const marca={
       id:creaproducto.marcaId,
