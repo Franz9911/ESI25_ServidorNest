@@ -28,6 +28,11 @@ import { Representante } from './representante/entities/representante.entity';
 import { CuentaBancariaModule } from './cuenta-bancaria/cuenta-bancaria.module';
 import { CuentaBancaria } from './cuenta-bancaria/entities/cuenta-bancaria.entity';
 import { PdfModule } from './pdf/pdf.module';
+import { CompraModule } from './compra/compra.module';
+import { Compra } from './compra/entities/compra.entity';
+import { DetalleCompra } from './compra/entities/detalle.entity';
+import { PlanPagoCompra } from './compra/entities/plan-pago.entity';
+import { Cotizacion } from './compra/entities/cotizacion.entity';
 
 
 
@@ -44,8 +49,9 @@ import { PdfModule } from './pdf/pdf.module';
       username: 'postgres',
       password: '5432',
       database: 'ESI-DB',
-      entities: [Usuario,
-        Persona,RegistroActividad,Producto,Marca,Empresa,Proveedor,Representante,CuentaBancaria],
+      entities: [Usuario,Persona,RegistroActividad,
+        Producto,Marca,Empresa,Proveedor,Representante,
+        CuentaBancaria,Compra,DetalleCompra,PlanPagoCompra,Cotizacion],
       synchronize: true, // ¡Usar true solo en desarrollo!
     }),
     ThrottlerModule.forRoot([
@@ -66,6 +72,7 @@ import { PdfModule } from './pdf/pdf.module';
     RepresentanteModule,
     CuentaBancariaModule,
     PdfModule,
+    CompraModule,
    
    ],
   controllers: [AppController],

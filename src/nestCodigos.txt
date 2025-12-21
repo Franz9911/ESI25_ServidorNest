@@ -16,7 +16,8 @@ para crear un recurso:
 2 actualizamos el appmodule.
 3 importar el typeormmodule.forFacture en la entidad.module
 4 modificar el dto create.
-5 modificar el servicio.
+5 modificar el controller.
+6 modificar el servicio.
 
 //lista de estados en HttpException
 400:BadRequest «Mala petición». El servidor no puede devolver una respuesta debido a un error del cliente. 

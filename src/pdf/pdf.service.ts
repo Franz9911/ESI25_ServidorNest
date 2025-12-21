@@ -65,7 +65,9 @@ export class PdfService {
       doc.moveUp(8);
       doc.fontSize(15).text(titulo,{align:'center'});
       doc.fontSize(9).text(`A continuación, se presenta la información de los proveedores de la empresa ESI, 
-      filtrada según los siguientes criterios: Estado: ${dto.estado ||'No aplica' }, Razón social: ${dto.nombreEmpresa ||'No aplica'}, Período de registro: del ${dto.fechaInicio ||'No aplica'} al ${dto.fechaFin ||'No aplica'}.`,150,70,{width:400,align:'justify'}).moveDown(3);
+      filtrada según los siguientes criterios: Estado: ${dto.estado ||'No aplica' }, 
+      Razón social: ${dto.nombreEmpresa ||'No aplica'}, Período de registro: del ${dto.fechaInicio ||'No aplica'} al
+       ${dto.fechaFin ||'No aplica'}.`,150,70,{width:400,align:'justify'}).moveDown(3);
     }
 
     private CargarTabla<T>(doc: PDFKit.PDFDocument, data: T[], columnas: TableColumn[],) {
@@ -150,6 +152,39 @@ export class PdfService {
     }
     obtenerEmpresaDatos(obj: any, path: string) {
         return path.split('.').reduce((acc, part) => acc?.[part], obj);
+    }
+    generarCotizacionPdf(cotizacion:any,detalles:any,columnas:any):Promise<string>{
+      const fileName=`OC${cotizacion.compra.id}_${cotizacion.proveedor.empresa.razonSocial}.pdf`;
+      //const filePath=join(__dirname,`../../uploads/pdf/cotizaciones/OC${cotizacion.compra.id}/${fileName}`);
+      const dirPath = join(__dirname, `../../uploads/ordenCompra/OC${cotizacion.compra.id}/cotizaciones`);
+      const dirPathRespuestas=join(__dirname, `../../uploads/ordenCompra/OC${cotizacion.compra.id}/respuestas`);
+      const filePath = join(dirPath, fileName);
+      if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
+        fs.mkdirSync(dirPathRespuestas,{recursive:true});
+      }
+      const doc=new PDFDocument({
+        margin:40,
+        size:'a4',
+      });
+
+      return new Promise((resolve,reject)=>{
+        const stream =fs.createWriteStream(filePath);
+        doc.pipe(stream);
+        this.AgregarLogo(doc,'kuma2.png');
+        doc.fontSize(16).text('Solicitud de Cotización ', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(11).text(`Proveedor: ${cotizacion.proveedor.empresa.razonSocial}`);
+        doc.text(`Fecha: ${new Date().toLocaleDateString()}`);
+        doc.fontSize(9).text('La empresa El Shaddai Importaciones solicita de la manera mas amable la presentacion de la cotizacion de los siguientes productos:');
+        doc.moveDown(2);
+
+        this.CargarTabla(doc,detalles,columnas);
+
+        doc.end();
+        stream.on('finish',()=> resolve(`OC${cotizacion.compra.id}`));
+        stream.on('error',reject);
+      }); 
     }
 }
 

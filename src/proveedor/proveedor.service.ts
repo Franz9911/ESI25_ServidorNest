@@ -51,12 +51,14 @@ export class ProveedorService {
     const query =this.proveedorRepository.createQueryBuilder('proveedor');
     query.leftJoinAndSelect('proveedor.empresa','empresa');
     if(fechaInicio!=''&& fechaInicio!='undefined'){
-      fechaIn=new Date(`${fechaInicio} 00:00:00`)
+      fechaIn=new Date(`${fechaInicio} 00:00:00`);
+      console.log('fechain:',fechaIn)
       if(fechaFin!=''&& fechaFin!='undefined'){
         fechaFi=new Date(`${fechaFin} 23:59:59`);
       }else{
         fechaFi=new Date(`${fechaInicio} 23:59:59`)
       }
+      console.log('fechaFi:',fechaFi)
       query.andWhere('proveedor.fechaReg BETWEEN :fechaIn AND :fechaFi', {
         fechaIn,
         fechaFi,

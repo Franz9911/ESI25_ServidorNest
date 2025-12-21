@@ -5,7 +5,7 @@ import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGenerat
 export class CuentaBancaria {
     @PrimaryGeneratedColumn('increment')
     id:number;
-    @Column()
+    @Column({nullable:true,length:8}) //quitar el nullable 
     estado:string;
     @CreateDateColumn({comment:'Fecha de registro'})
     fechaReg:Date;
@@ -19,7 +19,7 @@ export class CuentaBancaria {
     entidad:string;
     @Column({nullable:true, length:30,comment:'codigo swift'})
     swift:string;
-    @Column({nullable:true, length:30,comment:'codigo swift'})
+    @Column({nullable:true, length:30,comment:'codigo iban'})
     iban:string;
     @ManyToOne(() => Empresa, empresa => empresa.cuentasBancarias, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'empresa' })
