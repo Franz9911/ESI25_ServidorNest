@@ -6,18 +6,16 @@ import { Producto } from "src/producto/entities/producto.entity";
 export class DetalleCompra{
     @PrimaryGeneratedColumn('increment')
     id:number;
-    @Column({type:'decimal',precision:10,scale:2,comment:'costo'})
+    @Column({nullable:true, type:'decimal',precision:10,scale:2,comment:'costo'})
     precioUnit:number;
     @Column({type:'smallint',comment:'unidades adquiridas'})
     unidAdquiridas:number;
-    @Column({type:'smallint',comment:'unidades disponibles'})    
-    unidDisponibles:number;
-    @Column({nullable:true, type:'decimal',precision:10,scale:2,comment:'precio de venta al por menor sugerido'})
-    precioMin:number;
-    @Column({ nullable: true, type:'decimal',precision:10,scale:2,comment:'precio de venta al por mayor sugerido'})
-    precioMay:number;
-    @ManyToOne(()=>Producto,{eager:true})
+    @Column({nullable:true, type:'decimal',precision:10,scale:2,comment:'sub total del detalle'})
+    subTotal:number;
+    @Column({default:0, type:'smallint', comment:'unidades pendientes a entregarse'}) 
+    unidPendientes:number;
+    @ManyToOne(()=>Producto)
     producto:Producto
     @ManyToOne(()=>Compra, compra=>compra.detalles,{onDelete:'CASCADE'})
     compra:Compra;
-}
+} 

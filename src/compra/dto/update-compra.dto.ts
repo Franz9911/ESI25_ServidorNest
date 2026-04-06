@@ -22,6 +22,10 @@ export class UpdateCompraDto {
     @Type(()=>Number)
     idProveedor:number;
     @IsOptional()
+    fechaAnulacion:string;
+    @IsOptional()
+    motivoAnulacion:Date;
+    @IsOptional()
     plan:UpdatePlanPagoCompraDto;
     @IsOptional()
     @Type(() => UpdateDetalle)

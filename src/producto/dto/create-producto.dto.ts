@@ -23,10 +23,10 @@ export class CreateProductoDto {
     @Type(() => Number)
     minUnidades:number;
 
-    @Min(0, { message: 'Las unidades disponibles no pueden estar vacías' })
+    @Min(10, { message: 'El margen de ganancia es demaciado bajo' })
     @IsNumber()
     @Type(() => Number)
-    unidadesDis: number;
+    margenGanancia: number;
     
     @IsOptional()
     descripTec:string;

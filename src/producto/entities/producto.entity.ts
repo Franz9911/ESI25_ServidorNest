@@ -12,23 +12,24 @@ export class Producto{
     @Column({nullable: true, type:'smallint', comment:'Nivel minimo de unidades disponibles en almacen'})
     minUnidades:number;
 
-    @Column({type:'smallint', comment:'Unidades disponibles en almacen'})
+    @Column({default:0, type:'smallint', comment:'Unidades disponibles en almacen'})
     unidadesDis:number;
 
-    @Column({nullable:true, type:"decimal", comment:'percio refenrencial del producto'})
+    @Column({default:0, type:"decimal",scale:2,precision:12, comment:'precio promedio del producto'})
     precio:number;
 
     @Column({nullable: true, length:2550,comment:'descripcion tecnica del producto'})
     descripTec:string;
-    
-    @Column({length:2,comment:'Habiitar el producto para las ventas del sistema'})
+    @Column({type:'smallint',comment:'porcentanje maximo de gananacia del producto en una venta'})
+    margenGanancia:number;
+    @Column({length:2,comment:'Habilitar el producto para las ventas del sistema'})
     habilitarVenta:string;
     
     @Column({length:2,comment:'Habilitar el producto como refaccion para el sistema'}) 
     habilitarRefac:string;
     
     @Column({nullable: true, length:100,comment:'imagen descriptiva del producto'})
-    imagenProd:string;
+    imagenProd:string; 
     
     @Column({nullable:true, comment:'Codigo del producto para Inpuestos Nacionales'})
     codigoSIM:number;

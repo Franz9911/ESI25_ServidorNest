@@ -12,17 +12,10 @@ export class CreateDetalleCompra{
     @IsNumber()
     @Type(()=>Number)
     unidAdquiridas:number;
+    @IsOptional()
     @IsNumber()
     @Type(()=>Number)
-    unidDisponibles:number;
-    
-    //fechaRecepcion:Date;
-    @IsNumber()
-    @Type(()=>Number)
-    precioMin:number;
-    @IsNumber()
-    @Type(()=>Number)
-    precioMay:number;
+    subTotal:number;
     @IsNumber()
     @Type(()=>Number)
     idProducto:number;

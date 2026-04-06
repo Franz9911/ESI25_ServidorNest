@@ -33,6 +33,17 @@ import { Compra } from './compra/entities/compra.entity';
 import { DetalleCompra } from './compra/entities/detalle.entity';
 import { PlanPagoCompra } from './compra/entities/plan-pago.entity';
 import { Cotizacion } from './compra/entities/cotizacion.entity';
+import { PagoCompra } from './compra/entities/pago-compra.entity';
+import { MovimientosFinancierosModule } from './movimientos-financieros/movimientos-financieros.module';
+import { MovimientosFinancieros } from './movimientos-financieros/entities/movimientos-financiero.entity';
+import { CuotaCompra } from './compra/entities/cuota-compra.entity';
+import { Comprobante } from './compra/entities/comprobante.entity';
+import { Lote } from './inventario/entities/lote.entity';
+import { InventarioModule } from './inventario/inventario.module';
+import { MoviminetoInventario } from './inventario/entities/movimiento-inventario.entity';
+import { DevolucionCompra } from './compra/entities/devolucion-compra.entity';
+import { DetalleDevolucionCompra } from './compra/entities/detalle-devolucion-compra.entity';
+import { VentaModule } from './venta/venta.module';
 
 
 
@@ -51,7 +62,10 @@ import { Cotizacion } from './compra/entities/cotizacion.entity';
       database: 'ESI-DB',
       entities: [Usuario,Persona,RegistroActividad,
         Producto,Marca,Empresa,Proveedor,Representante,
-        CuentaBancaria,Compra,DetalleCompra,PlanPagoCompra,Cotizacion],
+        CuentaBancaria,Compra,DetalleCompra,PlanPagoCompra,Cotizacion,
+        PagoCompra,MovimientosFinancieros,CuotaCompra,DevolucionCompra,DetalleDevolucionCompra,Comprobante,Lote,
+        MoviminetoInventario,
+      ],
       synchronize: true, // ¡Usar true solo en desarrollo!
     }),
     ThrottlerModule.forRoot([
@@ -73,6 +87,9 @@ import { Cotizacion } from './compra/entities/cotizacion.entity';
     CuentaBancariaModule,
     PdfModule,
     CompraModule,
+    MovimientosFinancierosModule,
+    InventarioModule,
+    VentaModule,
    
    ],
   controllers: [AppController],
@@ -86,3 +103,4 @@ import { Cotizacion } from './compra/entities/cotizacion.entity';
   
 })
 export class AppModule {}
+ 

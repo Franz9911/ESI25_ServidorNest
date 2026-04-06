@@ -7,6 +7,7 @@ import { Repository, Not } from 'typeorm';
 import { PaginacionResultado } from 'src/Paginacion-resultado.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PartialType } from '@nestjs/mapped-types';
+import { FindPersonaDto } from './dto/find-persona.dto';
 
 @Injectable()
 export class PersonaService {
@@ -49,13 +50,52 @@ export class PersonaService {
       } 
   }
 
-  async findAll(page?:number,limit?:number):Promise<PaginacionResultado<Persona>> {
-    const[data,totalItems]= await this.personaRepository.findAndCount({
-      order:{id:'DESC'},
-      skip:(page-1)*limit,
-      take:limit
+  async findAll(dto:FindPersonaDto):Promise<PaginacionResultado<Persona>> {
+    const {nombre,apellidos,numDoc,celular,fechaInicio, fechaFin,datosPorPagina,paginaActual}=dto;
+    const query = await this.personaRepository.createQueryBuilder('persona'); //creamos una consul para la Db usand typeOrm
+    console.log("numDoc",numDoc);
+    let fechaIn: Date | null = null;
+    let fechaFi: Date | null = null;
+    // query.leftJoin('persona.usuario', 'usuario'); //unimos las tablas persona y usuarios atravez de id de usuario.
+   // query.andWhere('usuario.id IS NULL'); //filtrar por id; si id es null persona se agrega al resultado de busqueda. 
+   if(fechaInicio!='' && fechaInicio!='undefined'){
+    fechaIn=new Date(`${fechaInicio} 00:00:00`);
+    console.log('entramos',fechaIn);
+    if(fechaFin!='' && fechaFin!='undefined'){
+      fechaFi=new Date(`${fechaFin} 23:59:59`);
+    }else{
+      fechaFi=new Date(`${fechaInicio} 23:59:59`)
+    }
+    query.andWhere('persona.fechaReg BETWEEN :fechaIn AND :fechaFi', {
+      fechaIn,
+      fechaFi,
     });
-    return{
+  }
+      if(nombre){
+        query.andWhere('LOWER(persona.nombre) LIKE LOWER(:nombre)', { //filtrar por nombre en la busqueda
+          nombre: `%${nombre}%`,
+        });
+      }
+      if (apellidos) {
+        query.andWhere('LOWER(persona.apellidos) LIKE LOWER(:apellidos)', { //filtrar por apellidos en la busqueda
+          apellidos: `%${apellidos}%`,
+        });
+      }
+      if (numDoc) {
+        query.andWhere('CAST(persona.numDoc AS TEXT) LIKE :numDoc', { 
+          numDoc: `%${numDoc}%` 
+        });
+      }
+      if (celular) {
+        query.andWhere('CAST(persona.celular AS TEXT) LIKE :celular', { 
+          celular: `%${celular}%` 
+        });
+      }
+      query.orderBy('persona.id','DESC')
+      query.skip((paginaActual - 1) * datosPorPagina) //inicia la busqueda desde el id = ((page - 1) * limit)
+      query.take(datosPorPagina) //si encuentra n registros detiene la busqueda. n=limit 
+      const [data,totalItems]= await query.getManyAndCount(); //realizamos la consulta.
+    return {
       data,
       totalItems,
     }
@@ -77,6 +117,7 @@ export class PersonaService {
     const query = await this.personaRepository.createQueryBuilder('persona'); //creamos una consul para la Db usand typeOrm
     query.leftJoin('persona.usuario', 'usuario'); //unimos las tablas persona y usuarios atravez de id de usuario.
     query.andWhere('usuario.id IS NULL'); //filtrar por id; si id es null persona se agrega al resultado de busqueda. 
+      
       if(nombre){
         query.andWhere('LOWER(persona.nombre) LIKE LOWER(:nombre)', { //filtrar por nombre en la busqueda
           nombre: `%${nombre}%`,
@@ -132,5 +173,54 @@ export class PersonaService {
 
   async remove(id: number) {
     return  await this.personaRepository.delete({id});
+  }
+  async Imprimir(dto:FindPersonaDto): Promise<PaginacionResultado<Persona>>{
+    const {nombre,apellidos,numDoc,celular,fechaInicio, fechaFin}=dto;
+    console.log(fechaFin);
+    let fechaIn: Date | null = null;
+    let fechaFi: Date | null = null;
+    const query =this.personaRepository.createQueryBuilder('persona');
+    //query.leftJoinAndSelect('persona.empresa','empresa');
+    if(fechaInicio!='' && fechaInicio!='undefined'){
+      fechaIn=new Date(`${fechaInicio} 00:00:00`);
+      console.log('entramos',fechaIn);
+      if(fechaFin!='' && fechaFin!='undefined'){
+        fechaFi=new Date(`${fechaFin} 23:59:59`);
+      }else{
+        fechaFi=new Date(`${fechaInicio} 23:59:59`)
+      }
+      query.andWhere('persona.fechaReg BETWEEN :fechaIn AND :fechaFi', {
+        fechaIn,
+        fechaFi,
+      });
+    }
+    if(nombre){
+      query.andWhere('LOWER(persona.nombre) LIKE LOWER(:nombre)', {
+        nombre: `%${nombre}%`
+      });
+    } 
+    if(apellidos){
+      query.andWhere('LOWER(persona.apellidos) LIKE LOWER(:apellidos)', {
+        apellidos: `%${apellidos}%`
+      });
+    } 
+    if (numDoc) {
+      query.andWhere('CAST(persona.numDoc AS TEXT) LIKE :numDoc', { 
+        numDoc: `%${numDoc}%` 
+      });
+    }
+    if (celular) {
+      query.andWhere('CAST(persona.celular AS TEXT) LIKE :celular', { 
+        celular: `%${celular}%` 
+      });
+    }
+     
+    query.orderBy('persona.id','DESC');
+    //query.skip((dto.paginaActual-1)* dto.datosPorPagina).take(dto.datosPorPagina);
+    const [data,totalItems]=await query.getManyAndCount();
+    return {
+      totalItems,
+      data
+    }
   }
 }

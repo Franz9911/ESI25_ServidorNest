@@ -45,24 +45,44 @@ export class EmpresaService {
   }
 
   async buscarEmpresasServ(filtros:any) {
+    const query = await this.empresaRepository.createQueryBuilder('empresa'); //creamos una consul para la Db usand typeOrm
+    
+    const {razonSocial,numDoc, fechaInicio, fechaFin, paginaActual,datosPorPagina}=filtros;
+    console.log("inicio",fechaInicio);
+    console.log('fin',  fechaFin)
     let fechaIn:Date|null=null;
     let fechaFi:Date|null=null;
-    if(filtros.fechaInicio!='undefined')fechaIn=new Date(`${filtros.fechaInicio} 00:00:00`);
-    if(filtros.fechaFin!='undefined')fechaFi=new Date(`${filtros.fechaFin} 23:59:59`);
-    else fechaFi=new Date(`${filtros.fechaInicio} 23:59:59`);
-    console.log(fechaIn);
-    const [data,totalItems]= await this.empresaRepository.findAndCount({
-      where:{
-        ...(filtros.razonSocial && { razonSocial: ILike(`%${filtros.razonSocial}%`) }),
-        ...(fechaIn && fechaFi && { fechaReg: Between(fechaIn, fechaFi) }),
-        
-      },
-      relations:['proveedor'] ,
-      skip:(+filtros.paginaActual-1)*  +filtros.datosPorPagina,
-      take:+filtros.datosPorPagina,
-    })
-    return {data,
-    totalItems};
+    if(fechaInicio!='' && fechaInicio!='undefined'){
+      fechaIn=new Date(`${fechaInicio} 00:00:00`);
+      console.log('entramos',fechaIn);
+      if(fechaFin!='' && fechaFin!='undefined'){
+        fechaFi=new Date(`${fechaFin} 23:59:59`);
+      }else{
+        fechaFi=new Date(`${fechaInicio} 23:59:59`)
+      }
+      query.andWhere('empresa.fechaReg BETWEEN :fechaIn AND :fechaFi', {
+        fechaIn,
+        fechaFi,
+      });
+    }
+    if(razonSocial){
+      query.andWhere('LOWER(empresa.razonSocial) LIKE LOWER(:razonSocial)', { //filtrar por nombre en la busqueda
+        razonSocial: `%${razonSocial}%`,
+      });
+    }
+    if (numDoc &&numDoc!='undefined') {
+      query.andWhere('CAST(empresa.numDoc AS TEXT) LIKE :numDoc', { 
+        numDoc: `%${numDoc}%` 
+      });
+    }
+    query.orderBy('empresa.fechaReg','DESC') 
+      query.skip((paginaActual - 1) * datosPorPagina) //inicia la busqueda desde el id = ((page - 1) * limit)
+      query.take(datosPorPagina) //si encuentra n registros detiene la busqueda. n=limit 
+      const [data,totalItems]= await query.getManyAndCount(); //realizamos la consulta.
+    return {
+      data,
+      totalItems,
+    }
   }
   async EmpresasSinProveedorServ(razonSocial:string,nit:string,datosPorPagina:string,
     paginaActual:string):Promise<PaginacionResultado<Empresa>>{

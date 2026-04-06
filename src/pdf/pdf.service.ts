@@ -10,18 +10,20 @@ interface TableColumn {
     header: string;
     key: string;
     width?: number;
+    imageHeight?: number;
   }
   
   interface PdfOptions {
     fileName: string;
     title: string;
     logoPath?: string;
+    texto?: string;
   }
 @Injectable()
 export class PdfService {
     constructor(){}
     async GenerarPdfBase<T>(
-        data:T[], columnas:TableColumn[], opciones:PdfOptions,dto:FindProveedorDto):Promise<string>{
+        data:T[], columnas:TableColumn[], opciones:PdfOptions,dto:any):Promise<string>{
         //console.log("base",columnas)
         const filePath=join(__dirname,`../../uploads/pdf/${opciones.fileName}`)
         //crear El Documento
@@ -36,7 +38,7 @@ export class PdfService {
         doc.pipe(stream);
 
         this.AgregarLogo(doc,opciones.logoPath)
-        this.AgregarCabecera(doc,opciones.title,dto); //Titulo
+        this.AgregarCabecera(doc,opciones.title,opciones.texto); //Titulo
         this.CargarTabla(doc,data,columnas) //cuerpo tabla
         doc.end();
 
@@ -57,25 +59,22 @@ export class PdfService {
         if(fs.existsSync(absolutePath)){ //
             doc.image(absolutePath,40,40,{width:100});
         } 
-        doc.fontSize(8).text('El Shaddai Importaciones', 40, 115 , {
+        doc.fontSize(8).text('El Shaddai Importaciones', 40, 90 , {
           width: 100,align: 'center'});
     }
 
-    private AgregarCabecera(doc:PDFKit.PDFDocument,titulo:string,dto:FindProveedorDto){
+    private AgregarCabecera(doc:PDFKit.PDFDocument,titulo:string,texto:string){
       doc.moveUp(8);
       doc.fontSize(15).text(titulo,{align:'center'});
-      doc.fontSize(9).text(`A continuación, se presenta la información de los proveedores de la empresa ESI, 
-      filtrada según los siguientes criterios: Estado: ${dto.estado ||'No aplica' }, 
-      Razón social: ${dto.nombreEmpresa ||'No aplica'}, Período de registro: del ${dto.fechaInicio ||'No aplica'} al
-       ${dto.fechaFin ||'No aplica'}.`,150,70,{width:400,align:'justify'}).moveDown(3);
+      doc.fontSize(9).text(texto,160,60,{width:400,align:'justify'}).moveDown(3);
     }
 
-    private CargarTabla<T>(doc: PDFKit.PDFDocument, data: T[], columnas: TableColumn[],) {
+    private CargarTabla<T>(doc: PDFKit.PDFDocument, data: T[], columnas: TableColumn[]) {
       let y = doc.y;
       const startX = 50;
-      let contardorPagina=1;
+      let contardorPagina = 1;
     
-      //Encabezado
+      // Encabezado
       let x = startX;
       columnas.forEach((col) => {
         doc.font('Helvetica-Bold').fontSize(10).text(col.header, x, y, { width: col.width || 100 });
@@ -85,44 +84,45 @@ export class PdfService {
       doc.moveTo(40, doc.y).lineTo(550, doc.y).stroke();
       y = doc.y + 5;
     
-      const rowSpacing = 5; //espacio entre filas
+      const rowSpacing = 10;
     
-      //Filas
       data.forEach((item, index) => {
-        let x = startX;
-        let maxHeight = 0; //altura máxima de la fila
-    
-        // Calcular altura máxima de la fila
+        let maxHeight = 0;
         const heights: number[] = [];
+    
+        // ✅ SOLO calcular alturas de la fila, sin imprimir nada
         columnas.forEach((col) => {
-          const value = this.obtenerEmpresaDatos(item, col.key);
-          const text = col.key === 'id' ? `${index + 1}` : String(value ?? '-');
-    
-          // Medir altura del texto
-          const textOptions = { width: col.width || 100 };
-          const textHeight = doc.heightOfString(text, textOptions); //Mide cuanto espacio ocupa el texto dentro de la celda
-          heights.push(textHeight); //guarda la altura de cada celda 
-        });
-        maxHeight = Math.max(...heights);//obtener la altura máxima real de la fila
-    
-        // Verificar si la fila cabe en la página
-        if (y + maxHeight + rowSpacing > doc.page.height - 70) {
-          if(contardorPagina==1){ //solo imprime para la primera pagina
-            this.agregarPiePagina(doc,contardorPagina);
-            contardorPagina=contardorPagina+1;
-          }         
-          doc.addPage();
-          if(contardorPagina>1){ //imprime desde la pagina 2 hasta la ultima
-            this.agregarPiePagina(doc,contardorPagina);
+          const value = this.obtenerDatosDeObjeto(item, col.key);
+          if (col.key === 'imagenProd') {
+            // Usar altura fija para la imagen en el cálculo
+            heights.push(col.imageHeight || 60);
+          } else {
+            const text = col.key === 'id' ? `${index + 1}` : this.formatearValor(value, col.key);
+            const textHeight = doc.heightOfString(text, { width: col.width || 100 }); //guardamos la altura de cada item
+            heights.push(textHeight);
           }
-          contardorPagina=contardorPagina+1;
-          y = 60;
+        });
     
-          // volver a imprimir encabezado
-          x = startX;
+        maxHeight = Math.max(...heights); //guardaoms la altura maxima
+    
+        // Si la fila no cabe en la pagina creaoms una nueva pagina
+        if (y + maxHeight + rowSpacing > doc.page.height - 70) {
+          if (contardorPagina == 1) {
+            this.agregarPiePagina(doc, contardorPagina);
+            contardorPagina++;
+          }
+          doc.addPage();
+          if (contardorPagina > 1) {
+            this.agregarPiePagina(doc, contardorPagina);
+          }
+          contardorPagina++;
+          y = 60; //reiniciaos y
+    
+          // Reimprimir encabezado
+          x = startX; //reiniciaoms x
           columnas.forEach((col) => {
             doc.font('Helvetica-Bold').fontSize(10)
-               .text(col.header, x, y, { width: col.width || 100 });
+              .text(col.header, x, y, { width: col.width || 100 });
             x += col.width || 100;
           });
           doc.moveDown(0.5);
@@ -130,17 +130,35 @@ export class PdfService {
           y = doc.y + 5;
         }
     
-        // Imprimir fila
+        //imprimir fila con coordenadas x, y 
         x = startX;
         columnas.forEach((col) => {
-          const value = this.obtenerEmpresaDatos(item, col.key);
-          const text = col.key === 'id' ? `${index + 1}` : String(value ?? '-');  
-          doc.font('Helvetica').fontSize(9).text(text, x, y, { width: col.width || 100 });
-          x += col.width || 100;
+          const value = this.obtenerDatosDeObjeto(item, col.key);
+          const colWidth = col.width || 100;
+          const imgHeight = col.imageHeight || 60;
+    
+          if (col.key === 'imagenProd') { //solo valido para productos agregar mas condiciones 
+            //Imagen 
+            const filePath = join(__dirname, `../../${value}`);
+            if (fs.existsSync(filePath)) {
+              doc.image(filePath, x, y, {
+                width: colWidth - 4,   // margen interno
+                height: imgHeight,
+                fit: [colWidth - 4, imgHeight], //proporcionar sin desbordar
+              });
+            } else {
+              doc.font('Helvetica').fontSize(8).text('-', x, y, { width: colWidth });
+            }
+          } else {
+            const text = col.key === 'id' ? `${index + 1}` : this.formatearValor(value, col.key);
+            doc.font('Helvetica').fontSize(9).text(text, x, y, { width: colWidth });
+          }
+    
+          x += colWidth;
         });
-        y += maxHeight + rowSpacing; //avanzar a la siguiente fila
+    
+        y += maxHeight + rowSpacing;
       });
-      
     }
 
     agregarPiePagina(doc:PDFKit.PDFDocument,np:number){
@@ -150,8 +168,26 @@ export class PdfService {
       doc.fontSize(9).text(`pagina ${np}`,40,784,);
       doc.fontSize(9).text(`fecha: ${fecha.toLocaleDateString()} `,480,784,);
     }
-    obtenerEmpresaDatos(obj: any, path: string) {
+
+    obtenerDatosDeObjeto(obj: any, path: string) {
         return path.split('.').reduce((acc, part) => acc?.[part], obj);
+    }
+    private formatearValor(value: any, key: string): string {
+      if (value == null) return '-';
+    
+      // Detecta si el valor es una fecha válida
+      const esDate = value instanceof Date;
+      const esStringFecha = typeof value === 'string' && !isNaN(Date.parse(value));
+    
+      if (esDate || esStringFecha) {
+        const fecha = new Date(value);
+        const dia = String(fecha.getDate()).padStart(2, '0');
+        const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+        const anio = fecha.getFullYear();
+        return `${dia}/${mes}/${anio}`;
+      }
+    
+      return String(value);
     }
     generarCotizacionPdf(cotizacion:any,detalles:any,columnas:any):Promise<string>{
       const fileName=`OC${cotizacion.compra.id}_${cotizacion.proveedor.empresa.razonSocial}.pdf`;
@@ -171,7 +207,7 @@ export class PdfService {
       return new Promise((resolve,reject)=>{
         const stream =fs.createWriteStream(filePath);
         doc.pipe(stream);
-        this.AgregarLogo(doc,'kuma2.png');
+        this.AgregarLogo(doc,'logoESI.png');
         doc.fontSize(16).text('Solicitud de Cotización ', { align: 'center' });
         doc.moveDown();
         doc.fontSize(11).text(`Proveedor: ${cotizacion.proveedor.empresa.razonSocial}`);

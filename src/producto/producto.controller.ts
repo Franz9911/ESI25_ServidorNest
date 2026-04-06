@@ -36,13 +36,10 @@ export class ProductoController {
         cb(null,`prod-${fecha}-${nombreImagen}-${randon}${ext}`);
       }
     }),
-    limits:{fileSize:1*1024*1024},//1MB
+    limits:{fileSize:3*1024*1024},//1MB
     fileFilter:(req, file, cb)=> {
       if(!file.mimetype.startsWith('image/')){
         return cb(new BadRequestException('Solo se permite archivos de imagen'),false);
-      }
-      if(!file.originalname.toLowerCase().endsWith('.avif')){
-        return cb(new BadRequestException('Solo se permite el formato .avif para las imagenes'),false);
       }
       cb(null,true);
     },
@@ -57,7 +54,9 @@ export class ProductoController {
       id:creaproducto.marcaId,
       nombre:creaproducto.marcaNombre
     }
-    if(file)  creaproducto.imagenProd = `uploads/productos/${file.filename}`;
+    if(file){
+      creaproducto.imagenProd = `uploads/productos/${file.filename}`;
+    }
     return this.productoService.crearProductoServ(creaproducto,marca,usuarioId);
   }
 
@@ -100,9 +99,6 @@ export class ProductoController {
     fileFilter:(req,file,cb)=>{
       if(!file.mimetype.startsWith('image/')){
         return cb(new BadRequestException('Solo se permite archivos de imagen'),false);
-      }
-      if(!file.originalname.toLowerCase().endsWith('.avif')){
-        return cb(new BadRequestException('Solo se permite el formato .avif para las imagenes'),false);
       }
       cb(null,true);
     }

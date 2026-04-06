@@ -6,6 +6,7 @@ import { PaginacionResultado } from 'src/Paginacion-resultado.dto';
 import { Persona } from './entities/persona.entity';
 import { Readable } from 'stream';
 import { JwtAuthGuard } from 'src/autenticacion/common/guards/jwtAuthGuard'; 
+import { FindPersonaDto } from './dto/find-persona.dto';
 
 @Controller('persona')
 export class PersonaController {
@@ -25,10 +26,10 @@ export class PersonaController {
 
   @Get('listar')
   findAll(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
+    @Query() dto:FindPersonaDto,
+    
   ):Promise<PaginacionResultado<Persona>> {
-    return this.personaService.findAll(+page,+limit);
+    return this.personaService.findAll(dto);
   }
 
   @Get('buscarPersonasSinUsuario')

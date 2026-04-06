@@ -12,6 +12,7 @@ import { Marca } from 'src/marca/entities/marca.entity';
 import { Persona } from 'src/persona/entities/persona.entity';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PaginacionResultado } from 'src/Paginacion-resultado.dto';
+import { DetalleCompra } from 'src/compra/entities/detalle.entity';
 
 
 @Injectable()
@@ -21,6 +22,8 @@ export class ProductoService {
   constructor(
     @InjectRepository(Producto)
     private productoRepository:Repository<Producto>,
+    @InjectRepository(DetalleCompra)
+    private detalleCompraRepository:Repository<DetalleCompra>,
     private marcaService:MarcaService,
     private eventEmiter:EventEmitter2,
   ){}
@@ -48,7 +51,7 @@ export class ProductoService {
       imagenProd:createProductoDto.imagenProd,
       marca:marcaExiste,
       minUnidades:createProductoDto.minUnidades,
-      unidadesDis:createProductoDto.unidadesDis
+      margenGanancia:createProductoDto.margenGanancia
     }
     const productoGuardado=await this.productoRepository.save(nuevaProducto);
     this.logger.log('nuevo',nuevaProducto)
@@ -68,16 +71,17 @@ export class ProductoService {
 
   async buscarProductosServ(filtros:BuscarProductosDto):Promise<PaginacionResultado<Producto>> {
     //const contiene todos los datos ingresados en filtros.
-    const {marcaId,modelo,categoria,etiquetas,unidadesDis,modoEtiquetas,habilitarVenta,habilitarRefac,page,limit}=filtros;
+    
+    const {marcaId,modelo,categoria,etiquetas,unidadesDis,minUnidades,habilitarVenta,habilitarRefac,page,limit}=filtros;
     const query=this.productoRepository.createQueryBuilder('producto');
     this.logger.log('marca',typeof marcaId)  
 // JOIN con la tabla marca
       query.leftJoinAndSelect('producto.marca', 'marca');
     
-    if(etiquetas && etiquetas.length>0){ 
+    /*if(etiquetas && etiquetas.length>0){ 
       //query.leftJoinAndSelect('producto.etiqueta','etiqueta');
       //de momento no tenemos etiquetas
-    }
+    }*/
 
     // Filtro por id de marca
     if (marcaId !=='null') {
@@ -104,8 +108,12 @@ export class ProductoService {
         unidadesDisponibles:unidadesDis,
       });
     }
+
+    if(minUnidades == "Si"){ 
+      query.andWhere('producto.minUnidades >= producto.unidadesDis',);
+    }
     // Filtro por Etiquetas
-    if (etiquetas && etiquetas.length > 0) {
+    /*if (etiquetas && etiquetas.length > 0) {
       if (modoEtiquetas === 'any') {
         query.andWhere('etiqueta.nombre IN (:...etiquetas)', { etiquetas });
       } else if (modoEtiquetas === 'all') {
@@ -115,8 +123,8 @@ export class ProductoService {
           cantidadEtiquetas: etiquetas.length,
         });
       }
-    }
-    query.orderBy('producto.marca','ASC');
+    }*/
+    query.orderBy('producto.id','DESC');
     query.skip((page-1)*limit).take(limit);
     query.relation['marca'];
     const [productos,totalItems]=await query.getManyAndCount();
@@ -126,7 +134,57 @@ export class ProductoService {
       data:productos,
     }
   }
+  async imprimir(dto:BuscarProductosDto):Promise<PaginacionResultado<Producto>>{
+    const {marcaId,modelo,categoria,etiquetas,minUnidades,unidadesDis,modoEtiquetas,habilitarVenta,habilitarRefac,page,limit}=dto;
+    const query=this.productoRepository.createQueryBuilder('producto');
+    this.logger.log('marca',typeof marcaId)  
+// JOIN con la tabla marca
+      query.leftJoinAndSelect('producto.marca', 'marca');
+    
+    /*if(etiquetas && etiquetas.length>0){ 
+      //query.leftJoinAndSelect('producto.etiqueta','etiqueta');
+      //de momento no tenemos etiquetas
+    }*/
 
+    // Filtro por id de marca
+    if (marcaId !=='null') {
+      query.andWhere('marca.id = :marcaId', { marcaId });
+    }
+    if(modelo){
+      query.andWhere('LOWER(producto.modelo) LIKE LOWER(:modelo)',{
+        modelo:`%${modelo}%`,
+      });
+    }
+    if(habilitarVenta==='si'){
+      query.andWhere('LOWER(producto.habilitarVenta) LIKE LOWER(:habilitarVenta)',{
+        habilitarVenta:`%${habilitarVenta}`
+      })
+    }
+    if(habilitarRefac==='si'){
+      query.andWhere('LOWER(producto.habilitarRefac) LIKE LOWER(:habilitarRefac)',{
+        habilitarRefac:`%${habilitarRefac}`
+      })
+    }
+
+    if(unidadesDis !==undefined){
+      query.andWhere('producto.unidadesDis >= :unidadesDisponibles',{
+        unidadesDisponibles:unidadesDis,
+      });
+    }
+    if(minUnidades == "Si"){ 
+      query.andWhere('producto.minUnidades >= producto.unidadesDis',);
+    }
+    query.orderBy('producto.id','DESC');
+    //query.skip((page-1)*limit).take(limit);
+    query.relation['marca'];
+    const [productos,totalItems]=await query.getManyAndCount();
+    const currentPage=page; //esta lina se puede suprimir corregir el error primero
+    console.log('en el serviceProducto',productos)
+    return {
+      totalItems,
+      data:productos,
+    }
+  }
   async buscarProductoPorIdServ(id: number) {
     this.logger.log(id);
    const producto= await this.productoRepository.findOne({
@@ -184,8 +242,14 @@ export class ProductoService {
 
   async eliminarProductoServ(id: number) {
     if(id<1) throw new UnprocessableEntityException('El Id enviado no es valido');
+    
+    const contDetalles = await this.detalleCompraRepository.count({
+      where:{producto:{id}}
+    })
+    if(contDetalles>0){
+      throw new BadRequestException('No se puede elimar este producto por que tiene compras registradas');
+    }
     const resultado= await this.productoRepository.delete({id});
-
     if(resultado.affected===0){
       throw new NotFoundException(`No se encontró un producto en la DB`);
     }

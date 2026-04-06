@@ -24,10 +24,13 @@ export class BuscarProductosDto{
     @IsArray()
     etiquetas?:string[]
 
+    @IsString()
+    minUnidades?:string;
+
     @IsOptional()
-    habilitarVenta:string
+    habilitarVenta:string;
     @IsOptional()
-    habilitarRefac:string
+    habilitarRefac:string;
 
     @IsOptional()
     @IsIn(['any','all'])

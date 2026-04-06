@@ -26,8 +26,7 @@ export class CreatePlanPagoCompraDto{
     @IsNotEmpty()
     fechaInicio:Date;
     @IsNotEmpty()
-    fechaFin:Date;
-    @Length(6,25)
+
     estado:string;
     
 } 

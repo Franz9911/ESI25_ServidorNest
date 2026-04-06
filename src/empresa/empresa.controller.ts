@@ -22,7 +22,7 @@ export class EmpresaController {
 
   @Get('listar')
   async buscarEmpresas(@Query() filtros:any) {
-    console.log('filtros',filtros);
+    console.log('filtros2',filtros);
     return await this.empresaService.buscarEmpresasServ(filtros);
   }
 
