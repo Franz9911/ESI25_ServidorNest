@@ -18,8 +18,11 @@ export class CreateMovimientoInventarioDto {
     @IsNumber()
     @Type(()=>Number)
     idProducto:number;
-    @IsNumber()
-    
+    @IsNumber() 
     @Type(()=>Number)
     idDetalleCompra:number;
+    @IsNumber() 
+    @Type(()=>Number)
+    @IsOptional()
+    idPlanPago:number;
 }

@@ -17,18 +17,7 @@ export class MovimientosFinancierosController {
     return this.movimientosFinancierosService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.movimientosFinancierosService.findOne(+id);
-  }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateMovimientosFinancieroDto: UpdateMovimientosFinancieroDto) {
-    return this.movimientosFinancierosService.update(+id, updateMovimientosFinancieroDto);
-  }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.movimientosFinancierosService.remove(+id);
-  }
+ 
 }

@@ -1,10 +1,9 @@
 import { Column, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from "typeorm";
-import { PlanPagoCompra } from "./plan-pago.entity";
-import { PagoCompra } from "./pago-compra.entity";
+//import { PagoCompra } from "./pago-compra.entity";
 import { EstadoCuota } from "src/common/enums/estado-cuota.enum";
-@Entity()
+/*@Entity()
 export class CuotaCompra{
-    @PrimaryGeneratedColumn('increment')
+    @PrimaryGeneratedColumn('increment') 
     id:number;
     @Column({comment:'fecha de pago'})
     fechaPago:Date;
@@ -16,9 +15,9 @@ export class CuotaCompra{
     monto:number;
     @ManyToOne(()=>PlanPagoCompra,plan=>plan.cuotas)
     @JoinColumn()
-    plan:PlanPagoCompra;
+    plan:PlanPagoCompra;*/ 
 
-    @OneToOne(()=>PagoCompra,(pagoCompra)=>pagoCompra.cuota)
-    @JoinColumn({name:'pagoCompra',referencedColumnName:'id'})
-    pago?:PagoCompra;
-}
+    //@OneToOne(()=>PagoCompra,(pagoCompra)=>pagoCompra.cuota)
+    //@JoinColumn({name:'pagoCompra',referencedColumnName:'id'})
+    //pago?:PagoCompra;
+//}

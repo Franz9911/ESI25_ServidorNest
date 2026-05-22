@@ -2,14 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { CreateMovimientosFinancieroDto } from './dto/create-movimientos-financiero.dto';
 import { UpdateMovimientosFinancieroDto } from './dto/update-movimientos-financiero.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MovimientosFinancieros } from './entities/movimientos-financiero.entity';
+import { MovimientoFinanciero} from 'src/finanzas/entities/movimiento-financiero.entity';
+//import { MovimientosFinancieros } from './entities/movimientos-financiero.entity';
 import { Repository } from 'typeorm';
 
 @Injectable()
 export class MovimientosFinancierosService {
   constructor(
-    @InjectRepository(MovimientosFinancieros)
-    private movimientoFRepository:Repository<MovimientosFinancieros>,
+    @InjectRepository(MovimientoFinanciero)
+    private movimientoFRepository:Repository<MovimientoFinanciero>,
     
   ){}
   create(createMovimientosFinancieroDto: CreateMovimientosFinancieroDto) {

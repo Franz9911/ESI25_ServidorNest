@@ -23,13 +23,5 @@ export class InventarioController {
     return this.inventarioService.findOne(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateInventarioDto: UpdateInventarioDto) {
-    return this.inventarioService.update(+id, updateInventarioDto);
-  }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.inventarioService.remove(+id);
-  }
 }

@@ -2,8 +2,8 @@ import { PartialType } from '@nestjs/mapped-types';
 import { CreateCompraDto } from './create-compra.dto';
 import { IsNumber, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
-import { UpdatePlanPagoCompraDto } from './update-plan-pago-compra.dto';
 import { UpdateDetalle } from './update-detalle.dto';
+import { CreatePlanPagoDto } from 'src/cuentas/dto/create-plan-pago.dto';
 
 export class UpdateCompraDto {
     @IsOptional()
@@ -12,6 +12,8 @@ export class UpdateCompraDto {
     id:number;
     @IsOptional()
     fechaReg:string;
+    @IsString()
+    tipo:string; // agregar el tipo
     @IsOptional()
     folder:string;
     @IsString()
@@ -26,10 +28,18 @@ export class UpdateCompraDto {
     @IsOptional()
     motivoAnulacion:Date;
     @IsOptional()
-    plan:UpdatePlanPagoCompraDto;
+    plan :CreatePlanPagoDto;
     @IsOptional()
     @Type(() => UpdateDetalle)
     detalles:UpdateDetalle[];
     @IsOptional()
     cotizaciones:any;
+    @IsOptional()
+    @IsNumber()
+    @Type(()=>Number)
+    subTotal:number;
+    @IsOptional()
+    @IsNumber()
+    @Type(()=>Number)
+    impuestoTotal:number;
 }

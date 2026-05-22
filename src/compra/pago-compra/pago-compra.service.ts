@@ -1,13 +1,13 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource, QueryRunner } from 'typeorm';
-import { PlanPagoService } from '../plan-pago/plan-pago.service';
-import { CreatePagoCompraDto } from '../dto/create-pago.dto';
+
+//import { CreatePagoCompraDto } from '../dto/create-pago.dto';
 import { Compra } from '../entities/compra.entity';
-import { PlanPagoCompra } from '../entities/plan-pago.entity';
-import { CuotaCompra } from '../entities/cuota-compra.entity';
-import { PagoCompra } from '../entities/pago-compra.entity';
+//import { CuotaCompra } from '../entities/cuota-compra.entity';
+//import { PagoCompra } from '../entities/pago-compra.entity';
 import { CreateMovimientosFinancieroDto } from 'src/movimientos-financieros/dto/create-movimientos-financiero.dto';
-import { MovimientosFinancieros } from 'src/movimientos-financieros/entities/movimientos-financiero.entity';
+//import { MovimientosFinancieros } from 'src/movimientos-financieros/entities/movimientos-financiero.entity';
+import { MovimientoFinanciero } from 'src/finanzas/entities/movimiento-financiero.entity';
 import { EstadoCompra } from 'src/common/enums/estado-compra.enum';
 import { EstadoCuota } from 'src/common/enums/estado-cuota.enum';
 import { EstadoPlanPago } from 'src/common/enums/estado-plan-pago.enum';
@@ -18,9 +18,9 @@ import { Comprobante } from '../entities/comprobante.entity';
 export class PagoCompraService {
     constructor(
         private readonly dataSource:DataSource,
-        private readonly planPagoService:PlanPagoService,
+        
     ){}
-    async registrarPago(idOC:number,idCuota:number,dto:CreatePagoCompraDto,comprobantes:Express.Multer.File[]){
+    /*async registrarPago(idOC:number,idCuota:number,dto:CreatePagoCompraDto,comprobantes:Express.Multer.File[]){
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();
@@ -91,7 +91,7 @@ export class PagoCompraService {
         } finally{
             await queryRunner.release();
         }    
-    }
+    }*/
 
     /**
      * Objetivo: registrar la debolucion de los pagos de una compra debido a la anulacion de la compra 
@@ -101,7 +101,7 @@ export class PagoCompraService {
      * @param idOC 
      * @param queryRunner 
      */
-    async registrarDevolucion(plan:PlanPagoCompra,idOC:number,movimientos:CreateMovimientosFinancieroDto[],queryRunner:QueryRunner):Promise<void>{
+    /*async registrarDevolucion(plan:PlanPagoCompra,idOC:number,movimientos:CreateMovimientosFinancieroDto[],queryRunner:QueryRunner):Promise<void>{
         //el pago de la primera cuota es el contenedor donde registramos los movimientos finacieros producto de la anulacion de una compra.
         const cuotaPagada = await queryRunner.manager.findOne(CuotaCompra,{ //buscando primer pago
             where:{ plan: { id: plan.id },estado: EstadoCuota.PAGADA,
@@ -141,21 +141,21 @@ export class PagoCompraService {
             throw new ConflictException('Estas reembolsado mas de lo que pagaste')
         }   
         await this.registrarMoviminetos(queryRunner,movimientos,PagoContenedor)
-    }
-    private async registrarMoviminetos(
+    }*/
+    /*private async registrarMoviminetos(
         queryRunner:QueryRunner, movimientos:CreateMovimientosFinancieroDto[],pago:PagoCompra){
         for(const m of movimientos){
-            const movimiento = queryRunner.manager.create(MovimientosFinancieros,{
+            const movimiento = queryRunner.manager.create(MovimientoFinanciero,{
                 ...m,
                 pagoCompra:pago,
             });
             const mr = await queryRunner.manager.save(movimiento);
         }
-    }
+    }*/
     async verMontoReembolsado(idCuotaPagada:number, queryRunner:QueryRunner):Promise<Number>{
         console.log('id Cuota: ' ,idCuotaPagada);
         const result = await queryRunner.manager 
-            .createQueryBuilder(MovimientosFinancieros, 'mov')
+            .createQueryBuilder(MovimientoFinanciero, 'mov')
             .select('COALESCE(SUM(mov.monto), 0)', 'total')
             .where('mov.tipoM = :tipo', { tipo: 'ingreso' })
             .andWhere('mov.pagoCompraId = :idPago', { idPago: idCuotaPagada })

@@ -26,10 +26,10 @@ export class ProveedorController {
   }
 
   @Patch('modificar/:id')
-  ModifcarProveedor(
+  ModificarProveedor(
     @Param('id') id: string, 
     @Body() dto: UpdateProveedorDto) {
-    return this.proveedorService.ModifcarProveedorServ(+id, dto);
+    return this.proveedorService.ModificarProveedorServ(+id, dto);
   }
 
   @Delete('eliminar/:id')

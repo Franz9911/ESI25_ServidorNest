@@ -13,21 +13,26 @@ import { BuscarCotizacionDto } from './dto/buscar-cotizacion.dto';
 import { CreateCotizacionDto } from './dto/create-cotizacion.dto';
 import { ActualizarCotizacionDto } from './dto/actualizar-cotizacion.dto';
 import { UpdateDetalle } from './dto/update-detalle.dto';
-import { CreatePagoCompraDto } from './dto/create-pago.dto';
-import { PlanPagoService } from './plan-pago/plan-pago.service';
 import { CotizacionService } from './cotizacion/cotizacion.service';
-import { PagoCompraService } from './pago-compra/pago-compra.service';
 import { EstadoCompra } from 'src/common/enums/estado-compra.enum';
 import { EstadoPago } from 'src/common/enums/estado-pago.enum';
 import { CreateMovimientosFinancieroDto } from 'src/movimientos-financieros/dto/create-movimientos-financiero.dto';
 import { CreateDetalleCompra } from './dto/create-detalle.dto';
 import { EstadoCuota } from 'src/common/enums/estado-cuota.enum';
-import { CuotaCompra } from './entities/cuota-compra.entity';
+//import { CuotaCompra } from './entities/cuota-compra.entity';
 import { Lote } from 'src/inventario/entities/lote.entity';
-import { PlanPagoCompra } from './entities/plan-pago.entity';
+//import { PlanPagoCompra } from './entities/plan-pago.entity';
 import { CreateDevolucionCompraDto } from './dto/create-devolucion-compra.dto';
 import { DevolucionCompra } from './entities/devolucion-compra.entity';
 import { PaginacionResultado } from 'src/Paginacion-resultado.dto';
+import { CuentasService } from 'src/cuentas/cuentas.service';
+import { CreatePlanPagoDto } from 'src/cuentas/dto/create-plan-pago.dto';
+import { TipoCompraVentaEnum } from 'src/common/enums/tipo-compro-venta.enum';
+import { AnularPagoDto } from 'src/finanzas/dto/anular-pago-cuota.dto';
+import { EstadoLote } from 'src/common/enums/estado-lote.enum';
+import { DetalleLote } from 'src/inventario/entities/detalle-lote.entity';
+import { EstadoDetalleLote } from 'src/common/enums/detalle-lote.enum';
+import { InventarioService } from 'src/inventario/inventario.service';
 
 @Injectable()
 export class CompraService {
@@ -36,80 +41,64 @@ export class CompraService {
     private compraRepository:Repository<Compra>,
     @InjectRepository(Cotizacion)
     private cotizacionRepository: Repository<Cotizacion>,
-    private readonly planPagoService:PlanPagoService,
+    private readonly inventarioService: InventarioService,
     private readonly cotizacionService:CotizacionService,
-    private readonly pagoCompraService:PagoCompraService,
-    private readonly dataSourse:DataSource,
+    private readonly cuentasService:CuentasService,
+    private readonly dataSource:DataSource,
     ){} 
-
+    //orden de compra: compra en etapa de cotizacion,
+    //compra: compra asignada de forma directa o por cotiacion 
    /**
-   * Objetivo: ver de forma detallada una orden de compra "OC" 
-   * @param id 
-   * @returns 
+   * Objetivo: ver de forma detallada una orden de compra "OC" con sus cotizaciones 
    */
     async VerCotizacionServ(id: number,relaciones:Array<string>) { 
       const OC = await this.compraRepository.findOne({
-        where:{
-          id
-        },
-        relations:relaciones
+        where:{id},relations:relaciones
       });
       return OC;
     }
-
+    //ver compra a detalle
     async VerOrdenCompraServ(id: number,relaciones:Array<string>) { 
       const OC = await this.compraRepository.findOne({
-        where:{
-          id
-        },
+        where:{id},
         relations:relaciones,
         order:{
-          planPagos:{
-            cuotas:{
-              id:'ASC'
-            }
-          }
+          planPag:{cuotas:{id:'ASC'}}
         }
       });
       return OC;
     }
-  //Compra
   
   /**
    * Objetivo: MODIFICAR la Orden Compra a la cual le designaremos un proveedor que participo en la etapa de cotizacion.
    * ademas se creara un plan de pagos y se asignara un precio unitario y un subtotal a cada detalle de compra. 
-   * @param dto 
-   * @param idCompra 
-   * @param IdUsuario 
-   * @returns Compra
    */
+
   async asignarCompraProveedorServ(dto:UpdateCompraDto,idCompra:number,idCotizacion:number,IdUsuario:number){
-    const queryRunner=this.dataSourse.createQueryRunner();
+    const queryRunner=this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
+    console.log('ingresamos a asignar cotizacion');
     try{
-      //necesitamos bloquear el recurso
       const compra =await queryRunner.manager.findOne(Compra,{
         where:{id:idCompra},
         lock:{mode:'pessimistic_write'},
-      })
+      });
+      //?????definir un tipo de compra: credito o al contado 
       if(!compra){
         throw new NotFoundException('La compra no existe');
       }
-      const proveedor = await queryRunner.manager.findOne(Proveedor,{
-        where:{id:dto.idProveedor}
-      });
-      if(!proveedor){
-        throw new NotFoundException('No se encontrar al proveedor');
-      }
-      
+      const proveedor = await this.buscarProveedor(dto.idProveedor,queryRunner);
       const tipoCambio=Number(dto.plan.tipoCambio);
-      await this.modificarDetalleCompra(dto.detalles,tipoCambio,compra,queryRunner); //agregar el precio a cada detalle
-      await this.planPagoService.registrarPlanPago(dto.plan,compra,queryRunner);
+      compra.tipo=dto.tipo as TipoCompraVentaEnum;
+      //agregamos los precios a cada producto
+      await this.modificarDetalleCompra(dto.detalles,tipoCambio,compra,queryRunner); 
+      
+      await this.cuentasService.crearPlanPagoCompra(dto.plan,compra, queryRunner, ) //agregar moviminetos financieros opcional
       const cotizacionA = await this.cotizacionService.buscarCotizacionAsignada(compra.id,idCotizacion,queryRunner);
       compra.proveedor=proveedor; 
       compra.cotizacionAsignada=cotizacionA;
-      compra.estadoRec=dto.estadoRec;
+      compra.estadoRec=dto.estadoRec as EstadoCompra;
       compra.observaciones=dto.observaciones;
       await queryRunner.manager.save(compra);
       await queryRunner.commitTransaction();
@@ -122,15 +111,67 @@ export class CompraService {
       await queryRunner.release();
     }
   }
- 
+  
+  //crear una una compra de forma directa sin cotizaciones
+  async asignacionDirectaCompraServ(dto:CreateCompraDto){
+    const queryRunner=this.dataSource.createQueryRunner();
+    const planExiste:boolean=true;
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      //validar al proveedor
+      const proveedor = await this.buscarProveedor(dto.idProveedor,queryRunner);
+      const compra=queryRunner.manager.create(Compra,{
+        estadoRec:dto.estadoRec as EstadoCompra,
+        folder:null, // IMPORTANTE agregarFolder
+        observaciones:dto.observacion,
+        proveedor,
+        //agregar concepto
+        tipo:dto.tipo as TipoCompraVentaEnum,
+      });
+      await queryRunner.manager.save(compra);
+      //detalles recibe los datos economicos en moneda de operacion
+      const detalles= await this.registrarDetalleCompra(planExiste,dto.detalle,compra,queryRunner);
+      //totales recibe los datos en moneda de operacion
+      const totales=this.calcularTotal(detalles);
+      dto.plan.montoTotal=totales.totalFinal;
+      const concepto="compra de mercaderia";
+      const plan = await this.cuentasService.crearPlanPagoCompra(dto.plan, compra,queryRunner,dto.movimientos);
+      //compra guarda impuestos y subtotal en moneda de operacion
+      compra.impuestoTotal=totales.impuestoTotal;
+      compra.subTotal=totales.subTotalCompra;
+      //en compra no se debe modificar los lotes ni inventario eso se hara en inventarioService
+      await queryRunner.manager.save(compra);
+      console.log(compra);
+      await queryRunner.commitTransaction();
+      return compra;
+    } catch (e) {
+      await queryRunner.rollbackTransaction();
+      console.log(e);
+      throw e;
+    }finally{
+      await queryRunner.release()
+    }
+  }
+  //calcular el total de una compra
+  calcularTotal( detalles:DetalleCompra[]){
+    //en detalle tenemos: precioUnit , ivaMonto, ivaProcentaje, unidAdquiridas  
+    let subTotalCompra:number=0;
+    let impuestoTotal:number=0;
+    for(const item of detalles){
+      subTotalCompra+=Number(item.subTotal);
+      impuestoTotal+=Number(item.ivaMonto);
+    }
+    const totalFinal=Number((subTotalCompra+impuestoTotal).toFixed(2));
+    return {
+      subTotalCompra,
+      impuestoTotal,
+      totalFinal
+    }
+  }
   /**
    * NOTA: esta funcion es usada por asignarCompraProveedorServ()
    * Objetivo: AGREGAR el precio, unidPendientes  y subtotal a cada producto de la Orden de compra
-   * @param detallesDto 
-   * @param compra 
-   * @param queryRunner 
-   * @returns 
-   * 
    */
   private async modificarDetalleCompra(detallesDto:UpdateDetalle[], tipoCambio:number,compra:Compra,queryRunner:QueryRunner){
     if(!detallesDto || detallesDto.length===0){
@@ -141,8 +182,7 @@ export class CompraService {
       where:{
         id:In(detallesIds),
         compra:{id:compra.id}
-      },relations:['producto'], 
-      
+      },relations:['producto'],       
     });
     if(detallesExisten.length !== detallesIds.length){
       throw new NotFoundException('uno o mas detalles no pertenecen a la compra');
@@ -160,7 +200,6 @@ export class CompraService {
       if(item.precioUnit<=0){
         throw new BadRequestException('El precio unitario debe ser mayor a 0');
       }
-      //todo precio en detalle debe estar en moneda local;
       //agregarmos los precios de compra al registro de detalle 
       detalle.unidPendientes=detalle.unidAdquiridas;
       detalle.precioUnit= Number(item.precioUnit)*tipoCambio;
@@ -168,107 +207,155 @@ export class CompraService {
     }
     return await queryRunner.manager.save(detallesExisten);
   }
-  private async registrarDetalleCompra(detallesDto:CreateDetalleCompra[],compra:Compra,queryRunner:QueryRunner){
+
+  //si no existe un plan de pago es una cotizacion caso contrario es una compraDirecta
+  private async registrarDetalleCompra(compraDirecta:boolean, detallesDto:CreateDetalleCompra[],compra:Compra,queryRunner:QueryRunner){
     let detalles=[];
-    //detalles contiene la lista de producto solicitados en la OC
+    const ids = detallesDto.map(d => d.idProducto); //lo usamos para hacer la busqueda de productos
+    const productos = await queryRunner.manager.find(Producto, {
+      where: { id: In(ids) },
+      lock: { mode: 'pessimistic_write' }
+    });
+    const productosMap = new Map(productos.map(p => [p.id, p])); //map de productos
+    const detallesEntities: DetalleCompra[] = [];
     for(const item of detallesDto){
-      const producto =await queryRunner.manager.findOne(Producto,{
-        where:{id:item.idProducto},relations:['marca']});
-        console.log(producto);
-        if(!producto){
-          throw new NotFoundException(`no se encontro el producto ${item.idProducto}`)
-        }
-      const detalle=queryRunner.manager.create(DetalleCompra,{
-        unidAdquiridas:item.unidAdquiridas,
-        producto:producto,
-        compra:compra,
-      });
-      detalles.push(detalle);
-      //registrar detalle
-      await queryRunner.manager.save(detalle);  
-      console.log(detalle);
+      const producto =productosMap.get(item.idProducto);
+      console.log(producto);
+      if(!producto){
+        throw new NotFoundException(`no se encontro el producto ${item.idProducto}`)
+      }
+      const ivaPorcentaje=producto.iva || 0; //esto talves deberia venir del cliente?
+      if(item.unidAdquiridas<=0){
+        throw new BadRequestException(`Las unidades adquiridas para ${producto.modelo} deben ser mayores a 0`);
+      }
+      if(compraDirecta){
+        //en detalle tenemos: precioUnit , ivaMonto, ivaProcentaje, unidAdquiridas  
+      //en plan tenemos: tipoCambio, saldoPendiente=0, montoTotal, montoTotalML, mora=0, saldoPendienteML=0, totalRecargoMor=0
+        const subTotal=Number((item.unidAdquiridas*item.precioUnit).toFixed(2)); //precioUnit en moneda de operacion
+        const ivaMonto=Number((subTotal * (ivaPorcentaje / 100)).toFixed(2));
+        const totalDetalle= Number((subTotal+ivaMonto).toFixed(2));   
+        const precioFinalUnit = Number((totalDetalle / item.unidAdquiridas).toFixed(2));
+        const detalle=queryRunner.manager.create(DetalleCompra,{
+          unidAdquiridas:item.unidAdquiridas,
+          unidPendientes:item.unidAdquiridas,
+          subTotal:subTotal,
+          precioUnit:item.precioUnit,
+          precioFinalUnit,
+          producto:producto,
+          ivaPorcentaje:ivaPorcentaje,
+          compra,
+          ivaMonto,
+        });
+        detalles.push(detalle);
+      }else{
+        const detalle=queryRunner.manager.create(DetalleCompra,{
+          unidAdquiridas:item.unidAdquiridas,
+          producto:producto,
+          compra:compra,
+        });
+        detalles.push(detalle);
+      }
     }
+    await queryRunner.manager.save(detalles); 
     return detalles
   }
   /**
-   * Objetivo: Anular la orden de compra. esto implicar anular el plan de pagos y registrar devoluciones, las devoluciones no son obligatorias   
-   * @param idOC 
-   * @param motivo 
-   * @param movimientos 
-   * @returns se devolvera un mensaje de confirmacion con el id de compra
+   * Objetivo: Anular la orden de compra. esto implicar anular el plan de pagos y registrar devoluciones, 
+   * las devoluciones no son obligatorias   
    */
-  async anularCompra(idOC:number,motivo:string,movimientos:CreateMovimientosFinancieroDto[]):Promise<any>{
-    //para movimiento necesitamos el monto, tipo de cambio y referencia 
-    let totalMov:number=0;
-    console.log('dentro del service anulando compra');
-    console.log(movimientos);
-    const queryRunner=this.dataSourse.createQueryRunner();
+  async anularCompra(idCompra:number, dto:AnularPagoDto):Promise<any>{
+    const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      
-      const compra = await queryRunner.manager.findOne(Compra,{
-        where:{id:idOC}, 
-        lock:{mode:'pessimistic_write'},
-        //relations:['planPagos', 'planPagos.cuotas'], //separar
-      })
-      if(!compra){
-        throw new NotFoundException('No se pudo encontrar la compra');
-      }
-      if(compra.estadoRec === EstadoCompra.ANULADA){
-        throw new ConflictException('La compra ya esta anulada');
-      }
-      //debemos crear un estado para completado y recepcionado para que esta no pueda ser anulada
-      const lotes = await queryRunner.manager
-        .createQueryBuilder(Lote, 'l')
-        .innerJoin('l.detalleCompra', 'd')
-        .innerJoin('d.compra', 'c')
-        .where('c.id = :id', { id: idOC })
-        .getCount();
-      console.log('numero de lotes:', lotes)
-      if(lotes>0){
-        throw new ConflictException('No es posible anular la compra porque ya tiene productos registrados en el stock')
-      } //de todas formas debemos revisar lotes
-      compra.estadoRec = EstadoCompra.ANULADA;
-      compra.motivoAnulacion=motivo;
-      compra.fechaAnulacion=new Date();
-      await  queryRunner.manager.save(compra);
-      //console.log(compra);
-      const planPagos = await queryRunner.manager.findOne(PlanPagoCompra,{
-        where:{compra:{id:idOC}
-        },relations:['cuotas'],
+      const compra= await queryRunner.manager.findOne(Compra,{
+        where:{
+          id:idCompra,
+        },loadRelationIds:{relations:['planPag','detalles']},
+         lock:{mode:'pessimistic_write'}
       });
-      console.log(movimientos);
-      await this.planPagoService.anularPlanPago(planPagos,queryRunner);
-      movimientos.forEach(i=>{totalMov=i.monto});
-      console.log('totalMov: ',totalMov);
-      if(totalMov>0){
-        if(planPagos.montoTotalOperacion>planPagos.saldoPendiente){
-          await this.pagoCompraService.registrarDevolucion(planPagos,compra.id,movimientos,queryRunner); //movimiento va aqui
-        }else{
-          throw new BadRequestException('La compra no tiene pagos registrados por lo tanto no es posible registrar una devolucion')
-        }
-      }else{
-        console.log('monto es 0: ' ,totalMov)
+      console.log(compra);
+      //anular lotes de compra
+      const detalle:any[]=compra.detalles
+      if(!compra){
+        throw new NotFoundException('Compra no encontrada');
       }
-      
-    
+  
+      if(compra.estadoRec === EstadoCompra.ANULADA){
+        throw new BadRequestException('La compra ya fue anulada');
+      }
+      if(!compra.planPag){
+        throw new NotFoundException('no se pudo encontrar el plan de pagos de la compra')
+      }
+      const idPlanPagos=Number(compra.planPag);
+      await this.cuentasService.anularPlanPago(idPlanPagos, dto,queryRunner);
+      await this.anularLotesCompraTotal(detalle, queryRunner);
+      await queryRunner.manager.update(Compra,{ id:compra.id },{
+        estadoRec: EstadoCompra.ANULADA,
+        fechaAnulacion: new Date(),
+        motivoAnulacion:dto.motivo,
+      });
       await queryRunner.commitTransaction();
-      console.log('retornamos a compra')
-      return {
-        mensaje:`compra ${idOC} anulada`
-      };
+      return {mensaje:"Compra anulada correctamente"}
     } catch (error) {
+      await queryRunner.rollbackTransaction();
       console.log(error);
-      await queryRunner.rollbackTransaction() 
       throw error;
-    } finally{
-      await queryRunner.release()
+    }finally{
+      await queryRunner.release();
     }
+  }
+  //1. un detalleventa tienen muchos lotes 2. un lote tiene muchos detallesLote
+  public async anularLotesCompraTotal(detalleCompra:number[], queryRunner:QueryRunner){
+    const idsDetalleC:number[]=detalleCompra;
+    const lotes= await queryRunner.manager.find(Lote,{
+      where:{
+        estado:EstadoLote.INGRESADO,      
+        detalleCompra:{
+          id:In(idsDetalleC),
+        }
+      },loadRelationIds:{relations:['producto','detallesLote']},
+      lock:{mode:'pessimistic_write'},
+    });
+    for(const item of lotes){
+      const unidadesVendidas=item.unidadesIni-item.unidadesDis;
+      if(unidadesVendidas>0){
+        throw new UnprocessableEntityException(`El lote ${item.id} ya cuenta con ventas registradas por ${unidadesVendidas} unid. La venta no se puede anular`);
+      }
+    }
+    const idsLotes= lotes.map(l=>l.id);
+    const idsProductos=[
+      ...new Set(//set es una estructura que no permite elementos repetidos, set no es un array: set(2){3,5}
+      //por eso usamos los tres puntos "..." que es combierten el set en un array  
+      lotes.map(l => Number(l.producto)),
+    )];
+    const productos =await queryRunner.manager.find(Producto,{
+      where:{
+        id:In(idsProductos),
+      }, lock:{mode:'pessimistic_write'},
+    });
+
+    const productoMap= new Map(productos.map(p=>[Number(p.id),p]));
+    for(const l of lotes){ //puede haber un producto muchos lotes
+      const producto = productoMap.get(Number(l.producto));
+      if(!producto){
+        throw new UnprocessableEntityException(`producto no encontrado`);
+      }
+      producto.unidadesDis-=l.unidadesIni;
+      if(producto.unidadesDis<0){
+        throw new UnprocessableEntityException(`El producto ${producto.modelo} quedara con stock negativo`);
+      }
+      //anular lotes
+      l.estado=EstadoLote.ANULADO;
+      l.fechaAnulacion=new Date();
+    }
+    await queryRunner.manager.save(productos);
+    await queryRunner.manager.save(lotes); 
+    await this.inventarioService.anularMoviminetosInvTotalCompra(idsLotes,queryRunner);
   }
 
   async devolucionCompra(dto:CreateDevolucionCompraDto,idCompra:number):Promise<any>{
-    const queryRunner=this.dataSourse.createQueryRunner();
+    const queryRunner=this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
@@ -314,7 +401,6 @@ export class CompraService {
         });
         console.log('devolucion2: ',devolucionCompra);
         //crear detalles
-
       }
       
       /**/
@@ -331,7 +417,7 @@ export class CompraService {
     }
     
   }
-  async verMontoReembolsado(idPlan: number){
+  /*async verMontoReembolsado(idPlan: number){
     console.log('dentro del service anulando compra');
     
     const queryRunner=this.dataSourse.createQueryRunner();
@@ -346,7 +432,7 @@ export class CompraService {
     const totalReem = await this.pagoCompraService.verMontoReembolsado(cuotaPagada.pago.id, queryRunner)
     console.log('totalRemServCompra: ',totalReem );
     return totalReem;
-  }
+  }*/
   /*Cotizaciones */
 
   /**
@@ -357,17 +443,19 @@ export class CompraService {
    * @returns se retornara la compra registrada
    */
   async registrarOrdenCompraServ(dto:CreateCompraDto){
-    const queryRunner=this.dataSourse.createQueryRunner();
+    const queryRunner=this.dataSource.createQueryRunner();
+    const planExiste:boolean=false;
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try{
       const compra=queryRunner.manager.create(Compra,{
-        estadoRec:dto.estadoRec,
+        estadoRec:EstadoCompra.COTIZACION,
+        tipo:TipoCompraVentaEnum.CREDITO,
         folder:null,
       });
       await queryRunner.manager.save(compra);
       //detalles contiene la lista de producto solicitados en la OC
-      const detalles= await this.registrarDetalleCompra(dto.detalle,compra,queryRunner);
+      const detalles= await this.registrarDetalleCompra(planExiste, dto.detalle,compra,queryRunner);
       //registrar cotizaciones 
       compra.folder= await this.cotizacionService.registrarCotizacion(dto.cotizaciones,detalles,compra,queryRunner);
 
@@ -384,9 +472,7 @@ export class CompraService {
   }
   /**
    * Objetivo: listar todas las cotizacione registradas en la db
-   * @param dto filtros=>rago fecharegistro, razonsocial, representante.nombre, representante.apellidos,folder
-   * @returns =>compra.estado = cotizacion, compra.folder,compra.fecharegistro, 
-   * cotizacion.proveedor.empresa cotizacion.representante.persona, cotizacion.total, cotizacion.pdfrespuesta,  
+   * @param dto filtros=>rago fecharegistro, razonsocial, representante.nombre, representante.apellidos,folder  
    */
   async BuscarCotizacionesServ(dto:BuscarCotizacionDto) { 
     const { razonSocial,folder,repreNombre,repreApellidos,fechaInicio,fechaFin}=dto;
@@ -439,7 +525,7 @@ export class CompraService {
       data
     } 
   }
-
+  //buscar compra mediante el uso de filtros
   async BuscarOrdenesCompraServ(dto:BuscarCotizacionDto){
     console.log("prueba")
     const { razonSocial,folder,fechaInicio,fechaFin}=dto;
@@ -449,7 +535,7 @@ export class CompraService {
     const query=this.compraRepository.createQueryBuilder('compra');
     query.leftJoinAndSelect('compra.proveedor','proveedor');
     query.leftJoinAndSelect('proveedor.empresa','empresa');
-    query.leftJoinAndSelect('compra.planPagos','planPagos');
+    query.leftJoinAndSelect('compra.planPag','planPag');
     query.andWhere('compra.estadoRec <> :estado',{estado});
     if(fechaInicio){
       const fechaIn = new Date(`${fechaInicio} 00:00:00`);
@@ -498,7 +584,7 @@ export class CompraService {
    */
   async AgregarCotizacionServ(dto:CreateCotizacionDto){
     console.log('ingresamos a agregar cotizacion',dto.idProveedor)
-    const queryRunner=this.dataSourse.createQueryRunner();
+    const queryRunner=this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
@@ -523,31 +609,14 @@ export class CompraService {
     }
   }
   //si se agregar productos se debe borrar las respuestas ya resibidas y generar nuevos pdfs.
-  /**
-   * Objetivo: agregar productos a una OC registrada. solo se podra registrar productos si la OC 
-   * tiene estado de "cotizacion"
-   * @param dto 
-   */
-
-  //async AgregarProductoCotizacionServ(){
-  //}
-
-
-  //Nota: el sistema no permite el pago parcial de una cuota
-  async registrarPagoServ(
-    idOC:number,idCuota:number,dto:CreatePagoCompraDto,comprobantes:Express.Multer.File[] ){
-    return this.pagoCompraService.registrarPago(idOC,idCuota,dto,comprobantes);
  
-    //enviar las imagenes a pagoCompraService()
-  }
  
-
   //Verplan de pagos
   async verPlanPago(idOC:number){
-    const relaciones=['planPagos','planPagos.cuotas'];
+    const relaciones=['planPag','planPag.cuotas'];
     const compra = await this.VerOrdenCompraServ(idOC,relaciones);
-    const PlanPagos=compra.planPagos;
-    console.log(compra.planPagos);
+    const PlanPagos=compra.planPag;
+    console.log(compra.planPag);
     return  PlanPagos 
   }
 
@@ -560,9 +629,9 @@ export class CompraService {
     const query=this.compraRepository.createQueryBuilder('compra');
     query.leftJoinAndSelect('compra.proveedor','proveedor');
     query.leftJoinAndSelect('proveedor.empresa','empresa');
-    query.leftJoinAndSelect('compra.planPagos','planPagos');
+    query.leftJoinAndSelect('compra.planPag','planPag');
 
-    query.andWhere('compra.estadoRec <> :estado',{estado});
+    query.andWhere('compra.estadoRec <> :estado',{estado});//diferente a estado
     if(fechaInicio!='' && fechaInicio!='undefined'){
       fechaIn=new Date(`${fechaInicio} 00:00:00`);
       console.log('entramos',fechaIn);
@@ -595,5 +664,15 @@ export class CompraService {
       data
     }
   }
-
+  //Auxiliares
+  //buscar proveedor para compra y cotizaciones
+  async buscarProveedor(idProveedor:number, queryRunner:QueryRunner){
+    const proveedor = await queryRunner.manager.findOne(Proveedor,{
+      where:{id:idProveedor}
+    });
+    if(!proveedor){
+      throw new NotFoundException('No se encontrar al proveedor');
+    }
+    return proveedor;
+  }
 }

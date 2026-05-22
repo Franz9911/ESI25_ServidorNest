@@ -138,7 +138,7 @@ export class ProveedorService {
     return empresaProveedor;
   }
 
-  async ModifcarProveedorServ(id: number, dto: UpdateProveedorDto) {
+  async ModificarProveedorServ(id: number, dto: UpdateProveedorDto) {
     const proveedorExiste =await this.proveedorRepository.findOne({
       where:{id}
     });

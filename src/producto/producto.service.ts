@@ -49,6 +49,7 @@ export class ProductoService {
       habilitarRefac:createProductoDto.habilitarRefac,
       habilitarVenta:createProductoDto.habilitarVenta,
       imagenProd:createProductoDto.imagenProd,
+      iva:createProductoDto.iva,
       marca:marcaExiste,
       minUnidades:createProductoDto.minUnidades,
       margenGanancia:createProductoDto.margenGanancia

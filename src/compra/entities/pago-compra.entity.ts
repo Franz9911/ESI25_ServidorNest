@@ -1,10 +1,9 @@
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
-import { PlanPagoCompra } from "./plan-pago.entity";
-import { MovimientosFinancieros } from "src/movimientos-financieros/entities/movimientos-financiero.entity";
-import { CuotaCompra } from "./cuota-compra.entity";
+import { MovimientoFinanciero } from "src/finanzas/entities/movimiento-financiero.entity";
+//import { CuotaCompra } from "./cuota-compra.entity";
 import { EstadoPago } from "src/common/enums/estado-pago.enum";
 import { Comprobante } from "./comprobante.entity";
-@Entity()
+/*@Entity()
 export class PagoCompra{
     @PrimaryGeneratedColumn('increment')
     id:number;
@@ -43,11 +42,11 @@ export class PagoCompra{
     //fechaPago
     //id de movimientosde cuenta 
     
-    @OneToMany(()=>MovimientosFinancieros,movimientosFinancieros=>movimientosFinancieros.pagoCompra)
-    movimientos?:MovimientosFinancieros[];
+    //@OneToMany(()=>MovimientoFinanciero,movimientos=>MovimientoFinanciero.pagoCompra)
+    //movimientos?:MovimientoFinanciero[];
 
     @OneToOne(()=>CuotaCompra,cuota =>(cuota.pago))
     cuota:CuotaCompra;
     @OneToMany(()=>Comprobante, comprobantes => comprobantes.pago,{cascade:true})
     comprobantes:Comprobante[];
-}
+}*/

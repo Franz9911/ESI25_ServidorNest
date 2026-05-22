@@ -122,12 +122,12 @@ export class PdfController {
           { header: 'Folder', key: 'folder', width:40 },
           { header: 'Recep.', key: 'estadoRec', width:35},
           { header: 'F. Reg', key: 'fechaReg', width:50 },         
-          { header: 'P.P.', key: 'planPagos.estado', width:40 },
-          { header: 'M.O.', key: 'planPagos.monedaOperacion', width: 30 },
-          { header: 'M.T.', key: 'planPagos.montoTotalOperacion', width: 60 },
-          { header: 'R.M.', key: 'planPagos.totalRecargoMora', width: 50 },
-          { header: 'Saldo', key: 'planPagos.saldoPendiente', width: 60 },
-          { header: 'M.T. BOB', key: 'planPagos.montoTotalML', width: 50 },
+          { header: 'P.P.', key: 'planPag.estado', width:40 },
+          { header: 'M.O.', key: 'planPag.moneda', width: 30 },
+          { header: 'M.T.', key: 'planPag.montoTotal', width: 60 },
+          { header: 'R.M.', key: 'planPag.totalRecargoMora', width: 50 },
+          { header: 'Saldo', key: 'planPag.saldoPendiente', width: 60 },
+          { header: 'M.T. BOB', key: 'planPag.montoTotalML', width: 50 },
         ],
         //opciones
         {

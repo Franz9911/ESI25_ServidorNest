@@ -8,8 +8,15 @@ export class UpdateDetalle extends PartialType(CreateDetalleCompra){
     @IsNumber()
     @Type(()=>Number)
     id?: number;
+    @IsNumber()
+    @Type(()=>Number)
+    precioUnit:number;
     @IsString()
     fechaReg:Date;
     @IsNotEmpty()
     producto:Producto;
+    @IsOptional()
+    @IsNumber()
+    @Type(()=>Number)
+    subTotal?:number;
 }

@@ -16,7 +16,10 @@ export class Producto{
     unidadesDis:number;
 
     @Column({default:0, type:"decimal",scale:2,precision:12, comment:'precio promedio del producto'})
-    precio:number;
+    costoPromedio:number;
+
+    @Column({default:0, type:"decimal",scale:2,precision:12, comment:'precio promedio del producto'})
+    precioVenta:number;
 
     @Column({nullable: true, length:2550,comment:'descripcion tecnica del producto'})
     descripTec:string;
@@ -28,6 +31,9 @@ export class Producto{
     @Column({length:2,comment:'Habilitar el producto como refaccion para el sistema'}) 
     habilitarRefac:string;
     
+    @Column({type:'decimal', precision:5,scale:2, default:0, nullable:true})
+    iva:number;
+
     @Column({nullable: true, length:100,comment:'imagen descriptiva del producto'})
     imagenProd:string; 
     

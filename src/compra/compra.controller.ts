@@ -11,12 +11,13 @@ import { file } from 'pdfkit';
 import * as fs from 'fs';
 import { JwtAuthGuard } from 'src/autenticacion/common/guards/jwtAuthGuard';
 import { ActualizarCotizacionDto } from './dto/actualizar-cotizacion.dto';
-import { CreatePagoCompraDto } from './dto/create-pago.dto';
+//import { CreatePagoCompraDto } from './dto/create-pago.dto';
 import { plainToInstance } from 'class-transformer';
 import { validateOrReject } from 'class-validator';
 import { CreateMovimientosFinancieroDto } from 'src/movimientos-financieros/dto/create-movimientos-financiero.dto';
 import { CreateDetalleCompra } from './dto/create-detalle.dto';
 import { CreateDevolucionCompraDto } from './dto/create-devolucion-compra.dto';
+import { AnularPagoDto } from 'src/finanzas/dto/anular-pago-cuota.dto';
 
 @Controller('compra')
 export class CompraController {
@@ -27,6 +28,11 @@ export class CompraController {
   registrarOrdenCompra(@Body() dto:CreateCompraDto){
     //console.log('ingresamos a crear cotizacion')
     return this.compraService.registrarOrdenCompraServ(dto);
+  }
+  @Post('asignacion/directa')
+  asingacionDirectaCompra(@Body() dto:CreateCompraDto){
+    //console.log('ingresamos a crear cotizacion')
+    return this.compraService.asignacionDirectaCompraServ(dto);
   }
   @Post('agregarCotizacion')
   AgregarCotizacion(@Body() dto:CreateCotizacionDto){ 
@@ -60,9 +66,8 @@ export class CompraController {
   verDetalleOC(@Param('id') id: string) {
     console.log('en ver ordencompra');
     const relaciones = ['detalles','detalles.producto.marca',
-    
    'cotizacionAsignada.representante.persona','cotizacionAsignada.proveedor.empresa',
-   'planPagos', 'planPagos.cuotas'
+   'planPag', 'planPag.cuotas', 'proveedor.empresa'
   ]
     return this.compraService.VerOrdenCompraServ(+id, relaciones);
   }
@@ -75,7 +80,7 @@ export class CompraController {
       @Body() dto:UpdateCompraDto,
       @Req() req:any, 
     ){
-      console.log(dto);
+      console.log('ingresamos a asignar')
       const ID_USUARIO=req.user.id;
       return this.compraService.asignarCompraProveedorServ(dto,idCompra,idCotizacion,ID_USUARIO)
     }
@@ -88,20 +93,20 @@ export class CompraController {
   }*/
   @Get('total/reembolsado/:idPlan') 
   totalReembolsado(@Param('idPlan',ParseIntPipe) idPlan:number,){
-    const total= this.compraService.verMontoReembolsado(idPlan);
+    //const total= this.compraService.verMontoReembolsado(idPlan);
     
-    return total;
+    //return total;
   }
   @Patch('anular/:idOC')
   anularCompra(
     @Param('idOC',ParseIntPipe) idOC:number,
-    @Body()dto:CreateMovimientosFinancieroDto[]
+    @Body()dto:AnularPagoDto
     ){
     console.log('en el controller anulando compra')
-    const motivo=" pruba de anulacion de compra";
     const pago =null;
-    return this.compraService.anularCompra(idOC,motivo,dto)
+    return this.compraService.anularCompra(idOC,dto)
   }
+  
   @Patch('devolucion/:idOC')
   devolucionCompra(
     @Param('idOC',ParseIntPipe) idOC:number,
@@ -148,7 +153,7 @@ export class CompraController {
       cb(null,true);
     },
   }))
-  async registrarPago(
+  /*async registrarPago(
     @UploadedFiles() comprobantes: Express.Multer.File[],
     @Body('data') data: string,
     @Param('idOC',ParseIntPipe) idOC:number,
@@ -161,8 +166,8 @@ export class CompraController {
      // CreatePagoCompraDto.comprobante=`uploads/productos/${comprobante.filename}`;
      console.log('En el controller: ',comprobantes)
     }
-    return this.compraService.registrarPagoServ(idOC,idCuota,dto,comprobantes)
-  }
+    //return this.compraService.registrarPagoServ(idOC,idCuota,dto,comprobantes)
+  }*/
 
 
   //#######COTIZACIONES

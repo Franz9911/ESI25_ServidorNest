@@ -20,6 +20,4 @@ export class CreateDetalleCompra{
     @Type(()=>Number)
     idProducto:number;
     //compra:number;
-
-
 }

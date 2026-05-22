@@ -1,4 +1,4 @@
-export enum TipoMovFi{
+export enum TipoMovInventario{
     RECEPCION_COMPRA = "compra",
     AJUSTE_NEGATIVO = "ajuste negativo",
     AJUSTE_POSITIVO = "ajuste positivo",
@@ -7,7 +7,7 @@ export enum TipoMovFi{
     SALIDA_VENTA = "venta",
     CONSUMO_INTERNO = "consumo interno"
 }
-export enum SentidoMovFi{
-    INGRESO = "ingreso",
-    SALIDA = "salida"
+export enum SentidoMovInventario{
+    INGRESO="ingreso", 
+    SALIDA="salida",
 }

@@ -31,12 +31,11 @@ import { PdfModule } from './pdf/pdf.module';
 import { CompraModule } from './compra/compra.module';
 import { Compra } from './compra/entities/compra.entity';
 import { DetalleCompra } from './compra/entities/detalle.entity';
-import { PlanPagoCompra } from './compra/entities/plan-pago.entity';
 import { Cotizacion } from './compra/entities/cotizacion.entity';
-import { PagoCompra } from './compra/entities/pago-compra.entity';
+//import { PagoCompra } from './compra/entities/pago-compra.entity';
 import { MovimientosFinancierosModule } from './movimientos-financieros/movimientos-financieros.module';
-import { MovimientosFinancieros } from './movimientos-financieros/entities/movimientos-financiero.entity';
-import { CuotaCompra } from './compra/entities/cuota-compra.entity';
+//import { MovimientosFinancieros } from './movimientos-financieros/entities/movimientos-financiero.entity';
+//import { CuotaCompra } from './compra/entities/cuota-compra.entity';
 import { Comprobante } from './compra/entities/comprobante.entity';
 import { Lote } from './inventario/entities/lote.entity';
 import { InventarioModule } from './inventario/inventario.module';
@@ -44,6 +43,18 @@ import { MoviminetoInventario } from './inventario/entities/movimiento-inventari
 import { DevolucionCompra } from './compra/entities/devolucion-compra.entity';
 import { DetalleDevolucionCompra } from './compra/entities/detalle-devolucion-compra.entity';
 import { VentaModule } from './venta/venta.module';
+import { ClienteModule } from './cliente/cliente.module';
+import { Cliente } from './cliente/entities/cliente.entity';
+import { Venta } from './venta/entities/venta.entity';
+import { DetalleVenta } from './venta/entities/detalle-venta.entity';
+import { DetalleLote } from './inventario/entities/detalle-lote.entity';
+import { CuentasModule } from './cuentas/cuentas.module';
+import { PlanPago } from './cuentas/entities/planPago.entity';
+import { Cuota } from './cuentas/entities/cuota.entity';
+import { FinanzasModule } from './finanzas/finanzas.module';
+import { Pago } from './finanzas/entities/pago.entity';
+import { MovimientoFinancieroModule } from './finanzas/movimiento-financiero/movimiento-financiero.module';
+import { MovimientoFinanciero } from './finanzas/entities/movimiento-financiero.entity';
 
 
 
@@ -57,14 +68,17 @@ import { VentaModule } from './venta/venta.module';
       type: 'postgres',
       host: 'localhost',
       port: 5432,
-      username: 'postgres',
+      username: 'postgres', 
       password: '5432',
       database: 'ESI-DB',
       entities: [Usuario,Persona,RegistroActividad,
         Producto,Marca,Empresa,Proveedor,Representante,
-        CuentaBancaria,Compra,DetalleCompra,PlanPagoCompra,Cotizacion,
-        PagoCompra,MovimientosFinancieros,CuotaCompra,DevolucionCompra,DetalleDevolucionCompra,Comprobante,Lote,
-        MoviminetoInventario,
+        CuentaBancaria,Compra,DetalleCompra,Cotizacion,
+        //PagoCompra,
+        //CuotaCompra,
+        DevolucionCompra,DetalleDevolucionCompra,Comprobante,Lote,
+        MoviminetoInventario,Cliente, Venta, DetalleVenta,DetalleLote,
+        PlanPago,Cuota,Pago,MovimientoFinanciero,
       ],
       synchronize: true, // ¡Usar true solo en desarrollo!
     }),
@@ -90,6 +104,9 @@ import { VentaModule } from './venta/venta.module';
     MovimientosFinancierosModule,
     InventarioModule,
     VentaModule,
+    ClienteModule,
+    CuentasModule,
+    FinanzasModule,
    
    ],
   controllers: [AppController],
